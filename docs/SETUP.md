@@ -63,6 +63,25 @@ Data flows: **Page → Service → `/api/*` route → mock data**. When MongoDB 
 
 Auth uses httpOnly session cookies set by `POST /api/auth/login`. Middleware protects all routes except `/login`.
 
+## Commodity management (FR-2)
+
+Route: `/commodities` (sidebar link when authenticated).
+
+| Field | Description                                                      |
+| ----- | ---------------------------------------------------------------- |
+| Name  | Display name (e.g. Cocoa)                                        |
+| Code  | Uppercase unique identifier — auto-generated from name, editable |
+| Unit  | KG, TON, LITRE, BAG, or UNIT                                     |
+| Image | Upload stub — local preview only; API stores a mock URL          |
+
+Pre-seeded mock commodities: **Cocoa** (`COCOA`) and **Gum Arabic** (`GUM_ARABIC`).
+
+List controls: search, unit filter, table/grid layout switcher, and client-side pagination (default 10 rows per page).
+
+Action feedback: success and error toasts (Sonner) after create, update, or delete.
+
+API routes: `GET/POST /api/commodities`, `GET/PATCH/DELETE /api/commodities/[id]`.
+
 ## TypeScript conventions
 
 | Kind              | Suffix      | Example          |

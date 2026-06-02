@@ -16,7 +16,7 @@ Login: `john@example.com` / `SuperAdmin123!`
 
 ## Current phase
 
-**FR-1 Authentication** — login, session cookie, protected app shell, placeholder dashboard.
+**FR-2 Commodity Management** — full CRUD at `/commodities` with mock API routes.
 
 ## License
 

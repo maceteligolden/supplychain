@@ -11,4 +11,8 @@ export const API_ROUTES = {
   dashboard: {
     summary: "/api/dashboard/summary",
   },
+  commodities: {
+    list: "/api/commodities",
+    detail: (id: string): string => `/api/commodities/${id}`,
+  },
 } as const;

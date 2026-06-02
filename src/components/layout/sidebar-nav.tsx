@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboardIcon } from "lucide-react";
+import { LayoutDashboardIcon, PackageIcon } from "lucide-react";
 
 import {
   SidebarGroup,
@@ -24,7 +24,7 @@ const NAV_ITEMS: Record<
 > = {
   login: { label: "Login", icon: LayoutDashboardIcon },
   dashboard: { label: "Dashboard", icon: LayoutDashboardIcon },
-  commodities: { label: "Commodities", icon: LayoutDashboardIcon },
+  commodities: { label: "Commodities", icon: PackageIcon },
   farms: { label: "Farms", icon: LayoutDashboardIcon },
   actors: { label: "Actors", icon: LayoutDashboardIcon },
   batches: { label: "Batches", icon: LayoutDashboardIcon },

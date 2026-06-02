@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { JotaiProvider } from "@/components/providers/jotai-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -37,6 +38,7 @@ export default function RootLayout({
           <JotaiProvider>
             <ErrorBoundary>{children}</ErrorBoundary>
           </JotaiProvider>
+          <Toaster richColors closeButton position="top-right" />
         </TooltipProvider>
       </body>
     </html>
