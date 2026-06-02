@@ -4,7 +4,11 @@ Next.js supply chain traceability POC with strict TypeScript, mock swap-ready AP
 
 ## Getting started
 
-See [docs/SETUP.md](./docs/SETUP.md) and [docs/POC_PHASES.md](./docs/POC_PHASES.md).
+**Using the app:** [docs/GET_STARTED.md](./docs/GET_STARTED.md) — login, prerequisites, and supply chain workflow.
+
+**Deploy to Netlify:** [docs/DEPLOY_NETLIFY.md](./docs/DEPLOY_NETLIFY.md)
+
+**Developer setup:** [docs/SETUP.md](./docs/SETUP.md) and [docs/POC_PHASES.md](./docs/POC_PHASES.md).
 
 ```bash
 cp .env.example .env.local

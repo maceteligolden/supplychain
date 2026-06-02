@@ -1,6 +1,7 @@
 import { API_ROUTES } from "@/config/api-routes";
 import { getAuthHeaders } from "@/services/auth-headers";
 import { fetchJson } from "@/services/api-client";
+import type { GetActorInvolvementOutput } from "@/types/actor-involvement.interface";
 import type {
   CreateActorInput,
   DeleteActorOutput,
@@ -25,6 +26,20 @@ export async function getActors(): Promise<GetActorsOutput> {
 export async function getActorById(id: string): Promise<GetActorOutput> {
   return fetchJson<GetActorOutput>({
     url: API_ROUTES.actors.detail(id),
+    options: {
+      method: "GET",
+      cache: "no-store",
+      headers: await getAuthHeaders(),
+    },
+  });
+}
+
+/** Returns actor profile and supply chain involvement. */
+export async function getActorInvolvement(
+  id: string,
+): Promise<GetActorInvolvementOutput> {
+  return fetchJson<GetActorInvolvementOutput>({
+    url: API_ROUTES.actors.involvement(id),
     options: {
       method: "GET",
       cache: "no-store",

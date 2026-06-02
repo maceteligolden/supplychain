@@ -1,42 +1,56 @@
-export type ActivityType =
-  | "order_created"
-  | "shipment_dispatched"
-  | "inventory_low"
-  | "supplier_added";
-
-export interface KpiMetricInterface {
+export interface DashboardKpiInterface {
   /** Unique identifier for the KPI card. */
   id: string;
   /** Display label shown on the dashboard card. */
   label: string;
   /** Current metric value. */
   value: number;
-  /** Unit suffix (e.g. "%", "units"). */
-  unit?: string;
-  /** Percentage change from previous period. */
-  changePercent: number;
-  /** Whether the change is positive (good) or negative. */
-  trend: "up" | "down" | "neutral";
+  /** Optional description below the value. */
+  description?: string;
 }
 
-export interface RecentActivityInterface {
+export interface OngoingSupplyChainInterface {
+  /** Supply chain identifier. */
+  supplyChainId: string;
+  /** Display name of the supply chain. */
+  name: string;
+  /** Commodity name linked to the chain. */
+  commodityName: string;
+  /** Human-readable progress label (e.g. "At Collection"). */
+  progressLabel: string;
+  /** Number of lifecycle events recorded on this chain. */
+  eventsRecordedCount: number;
+}
+
+export interface DashboardChartPointInterface {
+  /** Category label for the chart axis. */
+  label: string;
+  /** Numeric value for the chart bar. */
+  value: number;
+}
+
+export interface DashboardRecentActivityInterface {
   /** Unique activity identifier. */
   id: string;
-  /** Type of supply-chain event. */
-  type: ActivityType;
   /** Human-readable activity description. */
   description: string;
   /** ISO timestamp of when the activity occurred. */
   occurredAt: string;
-  /** Related entity reference (order ID, shipment ID, etc.). */
-  referenceId: string;
+  /** Supply chain this activity belongs to. */
+  supplyChainId: string;
 }
 
 export interface DashboardSummaryInterface {
   /** Key performance indicators for the overview cards. */
-  kpis: KpiMetricInterface[];
+  kpis: DashboardKpiInterface[];
+  /** Active supply chains still in progress (not delivered). */
+  ongoingSupplyChains: OngoingSupplyChainInterface[];
+  /** Event counts grouped by lifecycle type for charts. */
+  eventsByType: DashboardChartPointInterface[];
+  /** Active chains grouped by furthest lifecycle stage reached. */
+  chainProgress: DashboardChartPointInterface[];
   /** Recent supply-chain activity feed items. */
-  recentActivity: RecentActivityInterface[];
+  recentActivity: DashboardRecentActivityInterface[];
 }
 
 export type GetDashboardSummaryOutput = DashboardSummaryInterface;

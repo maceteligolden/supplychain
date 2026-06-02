@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeftIcon, PencilIcon } from "lucide-react";
 
 import { EventTimeline } from "@/components/supply-chain-events/event-timeline";
+import { SupplyChainExportMenu } from "@/components/supply-chains/supply-chain-export-menu";
 import { StatCard } from "@/components/layout/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,10 +98,13 @@ export function SupplyChainDetailView({
             <p className="text-muted-foreground text-sm">{supplyChain.description}</p>
           ) : null}
         </div>
-        <Button variant="outline" onClick={onEdit}>
-          <PencilIcon className="size-4" />
-          Edit supply chain
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <SupplyChainExportMenu supplyChainId={supplyChain.id} />
+          <Button variant="outline" onClick={onEdit}>
+            <PencilIcon className="size-4" />
+            Edit supply chain
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

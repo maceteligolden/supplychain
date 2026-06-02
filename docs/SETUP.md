@@ -2,6 +2,10 @@
 
 Supply chain **traceability POC** frontend built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, **shadcn/ui**, **Jotai**, and **Joi**.
 
+For **end-user instructions** (login, prerequisites, supply chains), see [GET_STARTED.md](./GET_STARTED.md).
+
+For **Netlify deployment**, see [DEPLOY_NETLIFY.md](./DEPLOY_NETLIFY.md).
+
 See [POC_PHASES.md](./POC_PHASES.md) for the sequential build roadmap.
 
 ## Prerequisites
@@ -62,6 +66,19 @@ Data flows: **Page → Service → `/api/*` route → mock data**. When MongoDB 
 | `src/config/api-routes.ts`  | All API path constants             |
 
 Auth uses httpOnly session cookies set by `POST /api/auth/login`. Middleware protects all routes except `/login`.
+
+## Dashboard
+
+Route: `/` (home after login).
+
+| Section               | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| KPI cards             | Farms, batches, active supply chains, events recorded     |
+| Ongoing supply chains | Active chains not yet delivered — links to chain detail   |
+| Recent activity       | Latest lifecycle events across all chains                 |
+| Charts                | Events by type; active chains by furthest lifecycle stage |
+
+API route: `GET /api/dashboard/summary`.
 
 ## Commodity management (FR-2)
 
@@ -125,8 +142,11 @@ API routes:
 - `GET/PATCH/DELETE /api/supply-chains/[id]`
 - `PUT /api/supply-chains/[id]/allocations` — replace-all allocation sync
 - `GET /api/batch-allocations?supplyChainId=` — list allocations by chain
+- `GET /api/supply-chains/[id]/report` — traceability report JSON for export
 
 Entry: **View chain** in row actions, click chain name, or open wizard via **Add supply chain** / **Edit**.
+
+**Export report** (supply chain detail): **Export report** menu → Download PDF or Download CSV spreadsheet. Report includes chain metadata, stats, allocations, and lifecycle events.
 
 ## Event management (FR-8)
 
@@ -146,7 +166,9 @@ API routes: `GET/POST /api/supply-chains/[id]/events`, `PATCH /api/supply-chains
 
 ## Actor management (FR-4)
 
-Route: `/actors` (sidebar). Manage collection centres, processors, warehouses, exporters, and carriers.
+List route: `/actors`. Detail route: `/actors/[actorId]`.
+
+Manage collection centres, processors, warehouses, exporters, and carriers.
 
 | Field   | Description                                                       |
 | ------- | ----------------------------------------------------------------- |
@@ -156,9 +178,15 @@ Route: `/actors` (sidebar). Manage collection centres, processors, warehouses, e
 | Address | line1 (optional), city, region, country                           |
 | Status  | ACTIVE or INACTIVE — only ACTIVE actors appear in event dropdowns |
 
+**Create / edit wizard** (3 steps): organisation → address → status.
+
 Pre-seeded: **Kumasi Collection Centre**, **Accra Cocoa Processing Ltd**, **Tema Export Terminal**.
 
-API routes: `GET/POST /api/actors`, `GET/PATCH/DELETE /api/actors/[id]`.
+Actor detail shows profile, events recorded, supply chains involved, event history, and linked chain table.
+
+API routes: `GET/POST /api/actors`, `GET/PATCH/DELETE /api/actors/[id]`, `GET /api/actors/[id]/involvement`.
+
+Entry: click actor name on `/actors`, or **Edit** from row actions.
 
 Delete blocked when actor is referenced by supply chain events.
 

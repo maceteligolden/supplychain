@@ -9,7 +9,14 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - Mock `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`
 - httpOnly session cookie
 - Login page, protected routes, app shell with Super Admin profile
-- Placeholder dashboard
+
+### Phase 2 — Dashboard KPIs
+
+- `GET /api/dashboard/summary` — computed from live mock stores
+- Home page at `/` with real KPIs (farms, batches, active chains, events)
+- Ongoing supply chains table with quick links to chain detail
+- Recent activity feed (latest lifecycle events)
+- Bar charts: events by type, active chain progress breakdown
 
 ### Phase 3 — FR-2 Commodity Management
 
@@ -70,17 +77,24 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 
 - Full CRUD via `/api/actors` and `/api/actors/[id]`
 - Actors list at `/actors` with search, type/status filters, table/grid, pagination
+- **Actor detail** at `/actors/[actorId]` — profile, involvement stats, linked supply chains, event history
+- **3-step create/edit wizard** (organisation → address → status)
 - Types: COLLECTION_CENTRE, PROCESSOR, WAREHOUSE, EXPORTER, CARRIER
 - Pre-seeded Kumasi Collection Centre, Accra Cocoa Processing Ltd, Tema Export Terminal
 - Events require an **ACTIVE** actor (`actorId`); delete blocked when referenced by events
+- API: `GET /api/actors/[id]/involvement` — supply chains and events for an actor
+
+### Phase 11 — FR-10 Reporting (partial)
+
+- Traceability report export from supply chain detail — **PDF** or **CSV spreadsheet**
+- `GET /api/supply-chains/[id]/report` — report JSON payload
+- Client-side download via Export report menu on `/supply-chains/[supplyChainId]`
 
 ## Upcoming (in order)
 
-| Phase | Requirement                     | Key screens                        |
-| ----- | ------------------------------- | ---------------------------------- |
-| 2     | Dashboard KPIs                  | Real summary metrics from mock API |
-| 10    | FR-9 Traceability Visualization | Chain-of-custody graph             |
-| 11    | FR-10 Reporting                 | Traceability PDF reports           |
+| Phase | Requirement                     | Key screens            |
+| ----- | ------------------------------- | ---------------------- |
+| 10    | FR-9 Traceability Visualization | Chain-of-custody graph |
 
 ## Mock credentials (Phase 1)
 

@@ -27,6 +27,11 @@ export function supplyChainDetailPage(supplyChainId: string): string {
   return `/supply-chains/${supplyChainId}`;
 }
 
+/** Builds the actor detail page path. */
+export function actorDetailPage(actorId: string): string {
+  return `/actors/${actorId}`;
+}
+
 /** Routes enabled in the sidebar during the current POC phase. */
 export const ACTIVE_NAV_ROUTES: PageRouteKey[] = [
   "dashboard",

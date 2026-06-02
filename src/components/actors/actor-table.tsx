@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { ActorActionsMenu } from "@/components/actors/actor-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ACTOR_STATUS_LABELS, ACTOR_TYPE_LABELS } from "@/config/actor-types";
+import { actorDetailPage } from "@/config/page-routes";
 import { formatActorAddress } from "@/lib/actor/format-address";
 import type { ActorInterface } from "@/types/actor.interface";
 
@@ -54,7 +57,11 @@ export function ActorTable({
       <TableBody>
         {actors.map((actor) => (
           <TableRow key={actor.id}>
-            <TableCell className="font-medium">{actor.name}</TableCell>
+            <TableCell className="font-medium">
+              <Link href={actorDetailPage(actor.id)} className="hover:underline">
+                {actor.name}
+              </Link>
+            </TableCell>
             <TableCell>{ACTOR_TYPE_LABELS[actor.type]}</TableCell>
             <TableCell className="text-muted-foreground max-w-xs truncate text-sm">
               {formatActorAddress(actor)}

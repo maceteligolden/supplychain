@@ -64,7 +64,8 @@ export const env: EnvInterface = parseEnv({
   NEXT_PUBLIC_USE_MOCK_API: process.env.NEXT_PUBLIC_USE_MOCK_API,
   API_PROXY_TARGET: process.env.API_PROXY_TARGET,
   MOCK_DELAY_MS: process.env.MOCK_DELAY_MS,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_APP_URL:
+    process.env.NEXT_PUBLIC_APP_URL ?? process.env.URL ?? process.env.DEPLOY_PRIME_URL,
   SESSION_COOKIE_NAME: process.env.SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS: process.env.SESSION_MAX_AGE_SECONDS,
   SESSION_SECRET: process.env.SESSION_SECRET,

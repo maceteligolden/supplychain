@@ -1,6 +1,7 @@
 import { API_ROUTES } from "@/config/api-routes";
 import { getAuthHeaders } from "@/services/auth-headers";
 import { fetchJson } from "@/services/api-client";
+import type { GetSupplyChainReportOutput } from "@/types/supply-chain-report.interface";
 import type {
   CreateSupplyChainInput,
   DeleteSupplyChainOutput,
@@ -27,6 +28,20 @@ export async function getSupplyChains(): Promise<GetSupplyChainsOutput> {
 export async function getSupplyChainById(id: string): Promise<GetSupplyChainOutput> {
   return fetchJson<GetSupplyChainOutput>({
     url: API_ROUTES.supplyChains.detail(id),
+    options: {
+      method: "GET",
+      cache: "no-store",
+      headers: await getAuthHeaders(),
+    },
+  });
+}
+
+/** Returns a traceability report payload for export. */
+export async function getSupplyChainReport(
+  id: string,
+): Promise<GetSupplyChainReportOutput> {
+  return fetchJson<GetSupplyChainReportOutput>({
+    url: API_ROUTES.supplyChains.report(id),
     options: {
       method: "GET",
       cache: "no-store",

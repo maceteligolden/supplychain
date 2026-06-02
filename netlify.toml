@@ -1,0 +1,15 @@
+# Netlify deployment — Traceability Platform POC (Next.js 16)
+# If this repo’s root is above `supplychain/`, set Base directory to `supplychain` in Netlify UI.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  HUSKY = "0"
+  NEXT_PUBLIC_USE_MOCK_API = "true"
+  MOCK_DELAY_MS = "200"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

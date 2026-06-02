@@ -18,6 +18,7 @@ export const API_ROUTES = {
   actors: {
     list: "/api/actors",
     detail: (id: string): string => `/api/actors/${id}`,
+    involvement: (id: string): string => `/api/actors/${id}/involvement`,
   },
   farms: {
     list: "/api/farms",
@@ -27,6 +28,7 @@ export const API_ROUTES = {
     list: "/api/supply-chains",
     detail: (id: string): string => `/api/supply-chains/${id}`,
     allocations: (id: string): string => `/api/supply-chains/${id}/allocations`,
+    report: (id: string): string => `/api/supply-chains/${id}/report`,
     events: (id: string): string => `/api/supply-chains/${id}/events`,
     eventDetail: (id: string, eventId: string): string =>
       `/api/supply-chains/${id}/events/${eventId}`,
