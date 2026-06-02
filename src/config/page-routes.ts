@@ -17,5 +17,15 @@ export const PAGE_ROUTES = {
 
 export type PageRouteKey = keyof typeof PAGE_ROUTES;
 
+/** Builds the farm detail page path. */
+export function farmDetailPage(farmId: string): string {
+  return `/farms/${farmId}`;
+}
+
 /** Routes enabled in the sidebar during the current POC phase. */
-export const ACTIVE_NAV_ROUTES: PageRouteKey[] = ["dashboard", "commodities", "farms"];
+export const ACTIVE_NAV_ROUTES: PageRouteKey[] = [
+  "dashboard",
+  "commodities",
+  "farms",
+  "supplyChains",
+];

@@ -1,6 +1,7 @@
 "use client";
 
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import Link from "next/link";
+import { EyeIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { farmDetailPage } from "@/config/page-routes";
 import type { FarmInterface } from "@/types/farm.interface";
 
 export interface FarmActionsMenuProps {
@@ -46,6 +48,10 @@ export function FarmActionsMenu({
       />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
+          <DropdownMenuItem render={<Link href={farmDetailPage(farm.id)} />}>
+            <EyeIcon className="size-4" />
+            View farm
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={(): void => onEdit(farm)}>
             <PencilIcon className="size-4" />
             Edit

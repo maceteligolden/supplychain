@@ -19,4 +19,16 @@ export const API_ROUTES = {
     list: "/api/farms",
     detail: (id: string): string => `/api/farms/${id}`,
   },
+  supplyChains: {
+    list: "/api/supply-chains",
+    detail: (id: string): string => `/api/supply-chains/${id}`,
+  },
+  batches: {
+    list: (farmId: string): string => `/api/batches?farmId=${farmId}`,
+    detail: (id: string): string => `/api/batches/${id}`,
+  },
+  batchAllocations: {
+    list: (farmId: string): string => `/api/batch-allocations?farmId=${farmId}`,
+    detail: (id: string): string => `/api/batch-allocations/${id}`,
+  },
 } as const;

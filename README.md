@@ -16,7 +16,7 @@ Login: `john@example.com` / `SuperAdmin123!`
 
 ## Current phase
 
-**FR-3 Farm Management** — full CRUD at `/farms` with mock API routes, linked to commodities.
+**FR-6 Supply Chains**, **FR-5 Batches**, and **FR-7 Allocations** — supply chains at `/supply-chains`; farm detail at `/farms/[farmId]` with batch stats and management tabs.
 
 ## License
 

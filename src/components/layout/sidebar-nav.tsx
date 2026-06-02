@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboardIcon, PackageIcon, SproutIcon } from "lucide-react";
+import {
+  BoxesIcon,
+  LayoutDashboardIcon,
+  PackageIcon,
+  RouteIcon,
+  SproutIcon,
+} from "lucide-react";
 
 import {
   SidebarGroup,
@@ -27,8 +33,8 @@ const NAV_ITEMS: Record<
   commodities: { label: "Commodities", icon: PackageIcon },
   farms: { label: "Farms", icon: SproutIcon },
   actors: { label: "Actors", icon: LayoutDashboardIcon },
-  batches: { label: "Batches", icon: LayoutDashboardIcon },
-  supplyChains: { label: "Supply Chains", icon: LayoutDashboardIcon },
+  batches: { label: "Batches", icon: BoxesIcon },
+  supplyChains: { label: "Supply Chains", icon: RouteIcon },
   events: { label: "Events", icon: LayoutDashboardIcon },
   traceability: { label: "Traceability", icon: LayoutDashboardIcon },
   reports: { label: "Reports", icon: LayoutDashboardIcon },

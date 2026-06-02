@@ -31,15 +31,36 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - Auto-generated farm code from name (editable)
 - Toast feedback on create, update, and delete
 
+### Phase 5 — FR-6 Supply Chain Management
+
+- Full CRUD via `/api/supply-chains` and `/api/supply-chains/[id]`
+- Supply chains list at `/supply-chains` with search, status filter, table/grid, pagination
+- Pre-seeded **Ghana Cocoa Export Chain** and **Sudan Gum Arabic Export Chain**
+- Status enum: ACTIVE, INACTIVE (only ACTIVE chains accept allocations)
+
+### Phase 6 — FR-5 Batch Management (farm-scoped)
+
+- CRUD via `/api/batches` and `/api/batches/[id]` (filtered by `farmId`)
+- Farm detail at `/farms/[farmId]` — stats + **Batch management** and **Allocation management** tabs
+- Entry: **View farm** on farm rows, or click farm name
+- Auto-generated batch numbers; commodity + unit derived from farm
+- Pre-seeded one batch per seeded farm
+- Batch delete blocked when allocations exist
+
+### Phase 7 — FR-7 Batch Allocation (farm-scoped)
+
+- CRUD via `/api/batch-allocations` and `/api/batch-allocations/[id]`
+- **Allocations** tab on `/farms/[farmId]`
+- Allocate batch quantity to active supply chains; over-allocation rejected
+- Batch status auto-updates: CREATED → PARTIALLY_ALLOCATED → FULLY_ALLOCATED
+- Supply chain delete blocked when referenced by allocations
+
 ## Upcoming (in order)
 
 | Phase | Requirement                     | Key screens                          |
 | ----- | ------------------------------- | ------------------------------------ |
 | 2     | Dashboard KPIs                  | Real summary metrics from mock API   |
-| 5     | FR-4 Actor Management           | Collection centres, processors, etc. |
-| 6     | FR-5 Batch Management           | Harvest batches                      |
-| 7     | FR-6 Supply Chain Management    | Supply chain journeys                |
-| 8     | FR-7 Batch Allocation           | Allocate batches to chains           |
+| 8     | FR-4 Actor Management           | Collection centres, processors, etc. |
 | 9     | FR-8 Event Management           | HARVEST, COLLECTION, EXPORT, etc.    |
 | 10    | FR-9 Traceability Visualization | Chain-of-custody graph               |
 | 11    | FR-10 Reporting                 | Traceability PDF reports             |

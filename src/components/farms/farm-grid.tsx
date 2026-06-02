@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { MapPinIcon } from "lucide-react";
 
 import { FarmActionsMenu } from "@/components/farms/farm-actions-menu";
@@ -11,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { farmDetailPage } from "@/config/page-routes";
 import { formatFarmLocation } from "@/lib/farm/format-location";
 import type { FarmInterface } from "@/types/farm.interface";
 
@@ -70,7 +72,11 @@ export function FarmGrid({
         return (
           <Card key={farm.id} size="sm">
             <CardHeader>
-              <CardTitle className="truncate">{farm.name}</CardTitle>
+              <CardTitle className="truncate">
+                <Link href={farmDetailPage(farm.id)} className="hover:underline">
+                  {farm.name}
+                </Link>
+              </CardTitle>
               <CardAction>
                 <FarmActionsMenu
                   farm={farm}

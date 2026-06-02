@@ -99,6 +99,38 @@ List controls: search, commodity filter, table/grid layout switcher, client-side
 
 API routes: `GET/POST /api/farms`, `GET/PATCH/DELETE /api/farms/[id]`.
 
+## Supply chain management (FR-6)
+
+Route: `/supply-chains`.
+
+| Field       | Description                                                            |
+| ----------- | ---------------------------------------------------------------------- |
+| Name        | Display name (e.g. Ghana Cocoa Export Chain)                           |
+| Code        | Uppercase unique identifier — auto-generated from name, editable       |
+| Description | Optional route summary                                                 |
+| Status      | ACTIVE or INACTIVE — only ACTIVE chains appear in allocation dropdowns |
+
+Pre-seeded: **Ghana Cocoa Export Chain** (`GH_COCOA_EXPORT`) and **Sudan Gum Arabic Export Chain** (`SD_GUM_EXPORT`).
+
+API routes: `GET/POST /api/supply-chains`, `GET/PATCH/DELETE /api/supply-chains/[id]`.
+
+## Batch management & allocation (FR-5 + FR-7)
+
+Farm detail page: `/farms/[farmId]` — farm metadata, batch stats, and **Batch management** / **Allocation management** tabs.
+
+Entry: **View farm** in row actions, or click the farm name on `/farms`.
+
+| Batch field  | Description                                               |
+| ------------ | --------------------------------------------------------- |
+| Batch number | Auto-generated (e.g. `BATCH_ASHANTI_COCOA_FARM_2025_001`) |
+| Harvest date | YYYY-MM-DD                                                |
+| Quantity     | Positive number; unit inherited from farm commodity       |
+| Status       | CREATED, PARTIALLY_ALLOCATED, FULLY_ALLOCATED             |
+
+Allocations assign batch quantity to an **ACTIVE** supply chain. Total allocated quantity cannot exceed batch quantity.
+
+API routes: `GET/POST /api/batches`, `GET/PATCH/DELETE /api/batches/[id]`, `GET/POST /api/batch-allocations`, `PATCH/DELETE /api/batch-allocations/[id]`.
+
 ## TypeScript conventions
 
 | Kind              | Suffix      | Example          |

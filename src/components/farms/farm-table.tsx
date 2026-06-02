@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { FarmActionsMenu } from "@/components/farms/farm-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { farmDetailPage } from "@/config/page-routes";
 import { formatFarmLocation } from "@/lib/farm/format-location";
 import type { FarmInterface } from "@/types/farm.interface";
 
@@ -70,7 +73,14 @@ export function FarmTable({
       <TableBody>
         {farms.map((farm) => (
           <TableRow key={farm.id}>
-            <TableCell className="font-medium">{farm.name}</TableCell>
+            <TableCell className="font-medium">
+              <Link
+                href={farmDetailPage(farm.id)}
+                className="text-foreground hover:underline"
+              >
+                {farm.name}
+              </Link>
+            </TableCell>
             <TableCell>
               <code className="text-xs">{farm.code}</code>
             </TableCell>
