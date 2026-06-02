@@ -1,0 +1,54 @@
+---
+description: SupplyChain project conventions — types, styling, components, and tooling
+globs: supplychain/**/*
+alwaysApply: false
+---
+
+# SupplyChain conventions
+
+## TypeScript naming
+
+- **No `any`** — use `unknown` and narrow, or define explicit types.
+- **Function arguments**: define a dedicated type alias with the **`Input`** suffix (e.g. `CreateShipmentInput`).
+- **Function return values**: define a dedicated type alias with the **`Output`** suffix when non-primitive (e.g. `ListShipmentsOutput`).
+- **Interfaces**: use the **`Interface`** suffix for domain/data shapes (e.g. `ShipmentInterface`). React component prop interfaces use the **`Props`** suffix (e.g. `HeroSectionProps`).
+- **Explicit return types** are required on all exported functions and module boundaries.
+
+## Styling (Tailwind)
+
+- Colors, spacing, and max-width tokens live in `design-tokens/colors.ts` and `tailwind.config.ts`.
+- **Never use arbitrary values** in class names (e.g. `w-[13px]`, `bg-[#fff]`). Use named tokens (`gap-section`, `text-brand-primary-600`, etc.).
+- shadcn/ui components live under `src/components/ui/` — extend via variants, not inline arbitrary classes.
+
+## State (Jotai)
+
+- Atoms in `src/store/atoms.ts` (or feature-scoped `store/` modules).
+- Wrap client trees with `JotaiProvider`. Do not read atoms in Server Components.
+
+## Validation (Joi)
+
+- Schemas in `src/lib/validation/` (or feature modules). Use the shared `validate()` helper which throws `AppError` with code `VALIDATION_ERROR`.
+
+## Components
+
+Every component file must include:
+
+1. A **JSDoc block** on the exported component summarizing purpose and logic.
+2. **JSDoc on interface fields** describing what each prop/field is for.
+
+## Errors & logging
+
+- Throw `createAppError()` for domain failures; use `normalizeError()` at boundaries.
+- Log via `logger` from `@/lib/logger` — never raw `console.log` in application code.
+
+## Commands
+
+```bash
+npm run dev        # development server
+npm run build      # production build
+npm run lint       # ESLint
+npm run format     # Prettier write
+npm run typecheck  # tsc --noEmit
+```
+
+Pre-commit runs lint-staged; pre-push runs full lint + build.
