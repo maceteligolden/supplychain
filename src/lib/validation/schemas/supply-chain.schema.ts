@@ -21,6 +21,15 @@ export const createSupplyChainSchema = Joi.object({
   status: Joi.string()
     .valid(...SUPPLY_CHAIN_STATUSES)
     .required(),
+  commodityId: Joi.string().trim().optional(),
+  allocations: Joi.array()
+    .items(
+      Joi.object({
+        batchId: Joi.string().trim().required(),
+        quantity: Joi.number().positive().required(),
+      }),
+    )
+    .optional(),
 });
 
 export const updateSupplyChainSchema = Joi.object({
@@ -40,6 +49,7 @@ export const updateSupplyChainSchema = Joi.object({
   status: Joi.string()
     .valid(...SUPPLY_CHAIN_STATUSES)
     .optional(),
+  commodityId: Joi.string().trim().optional(),
 }).min(1);
 
 export type CreateSupplyChainSchemaInput = {
@@ -47,6 +57,11 @@ export type CreateSupplyChainSchemaInput = {
   code: string;
   description?: string;
   status: string;
+  commodityId?: string;
+  allocations?: {
+    batchId: string;
+    quantity: number;
+  }[];
 };
 
 export type UpdateSupplyChainSchemaInput = {
@@ -54,4 +69,5 @@ export type UpdateSupplyChainSchemaInput = {
   code?: string;
   description?: string;
   status?: string;
+  commodityId?: string;
 };

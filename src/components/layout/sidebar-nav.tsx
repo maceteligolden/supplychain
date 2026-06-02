@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BoxesIcon,
+  Building2Icon,
   LayoutDashboardIcon,
   PackageIcon,
   RouteIcon,
@@ -32,7 +33,7 @@ const NAV_ITEMS: Record<
   dashboard: { label: "Dashboard", icon: LayoutDashboardIcon },
   commodities: { label: "Commodities", icon: PackageIcon },
   farms: { label: "Farms", icon: SproutIcon },
-  actors: { label: "Actors", icon: LayoutDashboardIcon },
+  actors: { label: "Actors", icon: Building2Icon },
   batches: { label: "Batches", icon: BoxesIcon },
   supplyChains: { label: "Supply Chains", icon: RouteIcon },
   events: { label: "Events", icon: LayoutDashboardIcon },

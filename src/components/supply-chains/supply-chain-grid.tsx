@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { SupplyChainActionsMenu } from "@/components/supply-chains/supply-chain-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { supplyChainDetailPage } from "@/config/page-routes";
 import { SUPPLY_CHAIN_STATUS_LABELS } from "@/config/supply-chain-status";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
@@ -41,7 +44,11 @@ export function SupplyChainGrid({
       {supplyChains.map((chain) => (
         <Card key={chain.id} size="sm">
           <CardHeader>
-            <CardTitle className="truncate">{chain.name}</CardTitle>
+            <CardTitle className="truncate">
+              <Link href={supplyChainDetailPage(chain.id)} className="hover:underline">
+                {chain.name}
+              </Link>
+            </CardTitle>
             <CardAction>
               <SupplyChainActionsMenu
                 supplyChain={chain}

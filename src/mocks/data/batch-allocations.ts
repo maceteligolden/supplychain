@@ -5,6 +5,7 @@ import type {
   CreateBatchAllocationInput,
   UpdateBatchAllocationInput,
 } from "@/types/batch-allocation.interface";
+import type { SupplyChainAllocationInput } from "@/types/supply-chain.interface";
 
 const SEED_ALLOCATIONS: BatchAllocationInterface[] = [];
 
@@ -26,6 +27,12 @@ export function getBatchAllocationsByFarmId(
     const batch = getBatchById(allocation.batchId);
     return batch?.farmId === farmId;
   });
+}
+
+export function getBatchAllocationsBySupplyChainId(
+  supplyChainId: string,
+): BatchAllocationInterface[] {
+  return allocations.filter((item) => item.supplyChainId === supplyChainId);
 }
 
 export function getBatchAllocationById(
@@ -141,6 +148,86 @@ export function deleteBatchAllocation(id: string): boolean {
     getTotalAllocatedForBatch(existing.batchId),
   );
   return true;
+}
+
+function validateAllocationQuantity(
+  batchId: string,
+  quantity: number,
+  supplyChainId: string,
+): void {
+  const batch = getBatchById(batchId);
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (quantity <= 0) {
+    throw new Error("Allocation quantity must be greater than zero");
+  }
+
+  const existingOnChain = allocations.find(
+    (item) => item.batchId === batchId && item.supplyChainId === supplyChainId,
+  );
+  const totalAllocated = getTotalAllocatedForBatch(batchId);
+  const currentOnChain = existingOnChain?.quantity ?? 0;
+  const otherAllocated = totalAllocated - currentOnChain;
+
+  if (otherAllocated + quantity > batch.quantity) {
+    throw new Error("Allocation exceeds remaining batch quantity");
+  }
+}
+
+/**
+ * Replaces all allocations for a supply chain with the given payload.
+ * Allocations with quantity <= 0 are omitted (removed).
+ */
+export function syncSupplyChainAllocations(
+  supplyChainId: string,
+  items: SupplyChainAllocationInput[],
+): BatchAllocationInterface[] {
+  const supplyChain = getSupplyChainById(supplyChainId);
+  if (!supplyChain) {
+    throw new Error("Supply chain not found");
+  }
+
+  const normalized = items.filter((item) => item.quantity > 0);
+
+  for (const item of normalized) {
+    validateAllocationQuantity(item.batchId, item.quantity, supplyChainId);
+  }
+
+  const existingForChain = getBatchAllocationsBySupplyChainId(supplyChainId);
+  const nextBatchIds = new Set(normalized.map((item) => item.batchId));
+
+  for (const existing of existingForChain) {
+    if (!nextBatchIds.has(existing.batchId)) {
+      deleteBatchAllocation(existing.id);
+    }
+  }
+
+  const result: BatchAllocationInterface[] = [];
+
+  for (const item of normalized) {
+    const existing = getBatchAllocationsBySupplyChainId(supplyChainId).find(
+      (allocation) => allocation.batchId === item.batchId,
+    );
+
+    if (existing) {
+      const updated = updateBatchAllocation(existing.id, { quantity: item.quantity });
+      if (updated) {
+        result.push(updated);
+      }
+    } else {
+      result.push(
+        createBatchAllocation({
+          batchId: item.batchId,
+          supplyChainId,
+          quantity: item.quantity,
+        }),
+      );
+    }
+  }
+
+  return result;
 }
 
 /** Reset store to seed data — useful for tests only. */

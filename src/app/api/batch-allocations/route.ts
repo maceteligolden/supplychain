@@ -7,6 +7,7 @@ import { validate } from "@/lib/validation";
 import {
   createBatchAllocation,
   getBatchAllocationsByFarmId,
+  getBatchAllocationsBySupplyChainId,
 } from "@/mocks/data/batch-allocations";
 import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
 import type { GetBatchAllocationsOutput } from "@/types/batch-allocation.interface";
@@ -16,19 +17,33 @@ export async function GET(request: Request): Promise<Response> {
     handler: (): Response => {
       const { searchParams } = new URL(request.url);
       const farmId = searchParams.get("farmId");
+      const supplyChainId = searchParams.get("supplyChainId");
 
-      if (!farmId) {
+      if (!farmId && !supplyChainId) {
         return errorResponse({
           error: createAppError({
             code: "VALIDATION_ERROR",
-            message: "farmId query parameter is required",
+            message: "farmId or supplyChainId query parameter is required",
             statusCode: 400,
           }),
           fallbackMessage: "Failed to list batch allocations",
         });
       }
 
-      const items = getBatchAllocationsByFarmId(farmId);
+      if (farmId && supplyChainId) {
+        return errorResponse({
+          error: createAppError({
+            code: "VALIDATION_ERROR",
+            message: "Provide either farmId or supplyChainId, not both",
+            statusCode: 400,
+          }),
+          fallbackMessage: "Failed to list batch allocations",
+        });
+      }
+
+      const items = farmId
+        ? getBatchAllocationsByFarmId(farmId)
+        : getBatchAllocationsBySupplyChainId(supplyChainId as string);
       const output: GetBatchAllocationsOutput = {
         allocations: items,
         total: items.length,

@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { PlusIcon } from "lucide-react";
 
 import { SupplyChainDeleteDialog } from "@/components/supply-chains/supply-chain-delete-dialog";
-import { SupplyChainFormDialog } from "@/components/supply-chains/supply-chain-form-dialog";
 import { SupplyChainGrid } from "@/components/supply-chains/supply-chain-grid";
 import { SupplyChainTable } from "@/components/supply-chains/supply-chain-table";
+import { SupplyChainWizardDialog } from "@/components/supply-chains/supply-chain-wizard-dialog";
 import {
   LIST_VIEW_DEFAULT_PAGE_SIZE,
   ListViewPagination,
@@ -22,11 +22,19 @@ import {
 import type { ListViewPageSize } from "@/config/list-view";
 import { filterItemsByField, filterItemsBySearch } from "@/lib/list-view/filter-items";
 import { paginateItems } from "@/lib/list-view/paginate-items";
+import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
+import type { BatchInterface } from "@/types/batch.interface";
+import type { CommodityInterface } from "@/types/commodity.interface";
+import type { FarmInterface } from "@/types/farm.interface";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 import type { ListViewLayout } from "@/types/list-view.interface";
 
 export interface SupplyChainsViewProps {
   supplyChains: SupplyChainInterface[];
+  commodities: CommodityInterface[];
+  farms: FarmInterface[];
+  batchesByFarmId: Record<string, BatchInterface[]>;
+  allAllocations: BatchAllocationInterface[];
 }
 
 const STATUS_FILTER_OPTIONS = [
@@ -40,14 +48,19 @@ const STATUS_FILTER_OPTIONS = [
 /**
  * SupplyChainsView
  *
- * Client shell for supply chain management — searchable/filterable paginated list.
+ * Client shell for supply chain management — searchable/filterable paginated list
+ * with wizard-based create/edit.
  */
 export function SupplyChainsView({
   supplyChains,
+  commodities,
+  farms,
+  batchesByFarmId,
+  allAllocations,
 }: SupplyChainsViewProps): React.JSX.Element {
-  const [formOpen, setFormOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [formKey, setFormKey] = useState(0);
+  const [wizardKey, setWizardKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [layout, setLayout] = useState<ListViewLayout>("table");
@@ -79,14 +92,14 @@ export function SupplyChainsView({
 
   function handleCreate(): void {
     setSelectedChain(undefined);
-    setFormKey((current) => current + 1);
-    setFormOpen(true);
+    setWizardKey((current) => current + 1);
+    setWizardOpen(true);
   }
 
   function handleEdit(chain: SupplyChainInterface): void {
     setSelectedChain(chain);
-    setFormKey((current) => current + 1);
-    setFormOpen(true);
+    setWizardKey((current) => current + 1);
+    setWizardOpen(true);
   }
 
   function handleDelete(chain: SupplyChainInterface): void {
@@ -98,7 +111,7 @@ export function SupplyChainsView({
     <div className="gap-section flex flex-col">
       <PageHeader
         title="Supply chains"
-        description="Define traceability routes for allocating harvest batches."
+        description="Define traceability routes and allocate harvest batches from farms."
         actions={
           <Button onClick={handleCreate}>
             <PlusIcon className="size-4" />
@@ -155,10 +168,14 @@ export function SupplyChainsView({
           />
         </CardContent>
       </Card>
-      <SupplyChainFormDialog
-        key={formKey}
-        open={formOpen}
-        onOpenChange={setFormOpen}
+      <SupplyChainWizardDialog
+        key={wizardKey}
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        commodities={commodities}
+        farms={farms}
+        batchesByFarmId={batchesByFarmId}
+        allAllocations={allAllocations}
         supplyChain={selectedChain}
       />
       <SupplyChainDeleteDialog

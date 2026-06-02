@@ -101,18 +101,66 @@ API routes: `GET/POST /api/farms`, `GET/PATCH/DELETE /api/farms/[id]`.
 
 ## Supply chain management (FR-6)
 
-Route: `/supply-chains`.
+List route: `/supply-chains`. Detail route: `/supply-chains/[supplyChainId]`.
 
-| Field       | Description                                                            |
-| ----------- | ---------------------------------------------------------------------- |
-| Name        | Display name (e.g. Ghana Cocoa Export Chain)                           |
-| Code        | Uppercase unique identifier — auto-generated from name, editable       |
-| Description | Optional route summary                                                 |
-| Status      | ACTIVE or INACTIVE — only ACTIVE chains appear in allocation dropdowns |
+**Create / edit wizard** (3 steps):
+
+1. Select commodity, then one or more farms (same commodity) via horizontal carousel
+2. Allocate batch quantities per farm (0 = skip batch)
+3. Enter chain name, code, description, status
+
+| Field       | Description                                                        |
+| ----------- | ------------------------------------------------------------------ |
+| Name        | Display name (e.g. Ghana Cocoa Export Chain)                       |
+| Code        | Uppercase unique identifier — auto-generated from name, editable   |
+| Description | Optional route summary                                             |
+| Status      | ACTIVE or INACTIVE — only ACTIVE chains accept allocations         |
+| Commodity   | Set from wizard step 1; all source farms must share this commodity |
 
 Pre-seeded: **Ghana Cocoa Export Chain** (`GH_COCOA_EXPORT`) and **Sudan Gum Arabic Export Chain** (`SD_GUM_EXPORT`).
 
-API routes: `GET/POST /api/supply-chains`, `GET/PATCH/DELETE /api/supply-chains/[id]`.
+API routes:
+
+- `GET/POST /api/supply-chains` — POST accepts optional `commodityId` + `allocations[]`
+- `GET/PATCH/DELETE /api/supply-chains/[id]`
+- `PUT /api/supply-chains/[id]/allocations` — replace-all allocation sync
+- `GET /api/batch-allocations?supplyChainId=` — list allocations by chain
+
+Entry: **View chain** in row actions, click chain name, or open wizard via **Add supply chain** / **Edit**.
+
+## Event management (FR-8)
+
+Embedded on `/supply-chains/[supplyChainId]` — vertical tracking timeline (ecommerce-style).
+
+| Rule       | Description                                                                       |
+| ---------- | --------------------------------------------------------------------------------- |
+| Order      | HARVEST → COLLECTION → PROCESSING → WAREHOUSING → EXPORT → IN_TRANSIT → DELIVERED |
+| Skips      | Allowed (e.g. HARVEST then EXPORT)                                                |
+| Backwards  | Rejected — cannot add an earlier step after a later one                           |
+| Duplicates | One event per type per chain                                                      |
+| Delete     | Not allowed                                                                       |
+| Edit       | Notes and actor only — type and `occurredAt` are locked                           |
+| Actor      | Required on create — select from **ACTIVE** actors at `/actors`                   |
+
+API routes: `GET/POST /api/supply-chains/[id]/events`, `PATCH /api/supply-chains/[id]/events/[eventId]`.
+
+## Actor management (FR-4)
+
+Route: `/actors` (sidebar). Manage collection centres, processors, warehouses, exporters, and carriers.
+
+| Field   | Description                                                       |
+| ------- | ----------------------------------------------------------------- |
+| Name    | Organisation display name                                         |
+| Code    | Uppercase unique identifier — auto-generated from name, editable  |
+| Type    | COLLECTION_CENTRE, PROCESSOR, WAREHOUSE, EXPORTER, CARRIER        |
+| Address | line1 (optional), city, region, country                           |
+| Status  | ACTIVE or INACTIVE — only ACTIVE actors appear in event dropdowns |
+
+Pre-seeded: **Kumasi Collection Centre**, **Accra Cocoa Processing Ltd**, **Tema Export Terminal**.
+
+API routes: `GET/POST /api/actors`, `GET/PATCH/DELETE /api/actors/[id]`.
+
+Delete blocked when actor is referenced by supply chain events.
 
 ## Batch management & allocation (FR-5 + FR-7)
 
@@ -129,7 +177,7 @@ Entry: **View farm** in row actions, or click the farm name on `/farms`.
 
 Allocations assign batch quantity to an **ACTIVE** supply chain. Total allocated quantity cannot exceed batch quantity.
 
-API routes: `GET/POST /api/batches`, `GET/PATCH/DELETE /api/batches/[id]`, `GET/POST /api/batch-allocations`, `PATCH/DELETE /api/batch-allocations/[id]`.
+API routes: `GET/POST /api/batches`, `GET/PATCH/DELETE /api/batches/[id]`, `GET/POST /api/batch-allocations?farmId=`, `GET /api/batch-allocations?supplyChainId=`, `PATCH/DELETE /api/batch-allocations/[id]`.
 
 ## TypeScript conventions
 

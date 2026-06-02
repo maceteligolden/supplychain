@@ -6,6 +6,8 @@ import type {
   DeleteSupplyChainOutput,
   GetSupplyChainOutput,
   GetSupplyChainsOutput,
+  SyncSupplyChainAllocationsInput,
+  SyncSupplyChainAllocationsOutput,
   UpdateSupplyChainInput,
 } from "@/types/supply-chain.interface";
 
@@ -68,6 +70,21 @@ export async function deleteSupplyChain(id: string): Promise<DeleteSupplyChainOu
     url: API_ROUTES.supplyChains.detail(id),
     options: {
       method: "DELETE",
+      headers: await getAuthHeaders(),
+    },
+  });
+}
+
+/** Replaces all batch allocations for a supply chain. */
+export async function syncSupplyChainAllocations(
+  id: string,
+  input: SyncSupplyChainAllocationsInput,
+): Promise<SyncSupplyChainAllocationsOutput> {
+  return fetchJson<SyncSupplyChainAllocationsOutput>({
+    url: API_ROUTES.supplyChains.allocations(id),
+    options: {
+      method: "PUT",
+      body: JSON.stringify(input),
       headers: await getAuthHeaders(),
     },
   });

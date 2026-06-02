@@ -1,21 +1,18 @@
 import { createAppError } from "@/lib/errors";
 import {
-  updateSupplyChainSchema,
-  type UpdateSupplyChainSchemaInput,
-} from "@/lib/validation/schemas/supply-chain.schema";
+  updateActorSchema,
+  type UpdateActorSchemaInput,
+} from "@/lib/validation/schemas/actor.schema";
 import { validate } from "@/lib/validation";
-import { isSupplyChainReferencedByAllocation } from "@/mocks/data/batch-allocations";
+import { isActorReferencedByEvent } from "@/mocks/data/supply-chain-events";
 import {
-  deleteSupplyChain,
-  getSupplyChainById,
-  isSupplyChainCodeTaken,
-  updateSupplyChain,
-} from "@/mocks/data/supply-chains";
+  deleteActor,
+  getActorById,
+  isActorCodeTaken,
+  updateActor,
+} from "@/mocks/data/actors";
 import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
-import type {
-  DeleteSupplyChainOutput,
-  GetSupplyChainOutput,
-} from "@/types/supply-chain.interface";
+import type { DeleteActorOutput, GetActorOutput } from "@/types/actor.interface";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -26,19 +23,19 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     handler: async (): Promise<Response> => {
       try {
         const { id } = await context.params;
-        const supplyChain = getSupplyChainById(id);
+        const actor = getActorById(id);
 
-        if (!supplyChain) {
+        if (!actor) {
           throw createAppError({
             code: "NOT_FOUND",
-            message: "Supply chain not found",
+            message: "Actor not found",
             statusCode: 404,
           });
         }
 
-        return jsonResponse({ data: supplyChain });
+        return jsonResponse({ data: actor });
       } catch (error) {
-        return errorResponse({ error, fallbackMessage: "Failed to get supply chain" });
+        return errorResponse({ error, fallbackMessage: "Failed to get actor" });
       }
     },
   });
@@ -52,54 +49,58 @@ export async function PATCH(
     handler: async (): Promise<Response> => {
       try {
         const { id } = await context.params;
-        const existing = getSupplyChainById(id);
+        const existing = getActorById(id);
 
         if (!existing) {
           throw createAppError({
             code: "NOT_FOUND",
-            message: "Supply chain not found",
+            message: "Actor not found",
             statusCode: 404,
           });
         }
 
         const body: unknown = await request.json();
-        const input = validate<UpdateSupplyChainSchemaInput>({
-          schema: updateSupplyChainSchema,
+        const input = validate<UpdateActorSchemaInput>({
+          schema: updateActorSchema,
           data: body,
-          label: "supply chain update",
+          label: "actor update",
         });
 
-        if (input.code && isSupplyChainCodeTaken(input.code, id)) {
+        if (input.code && isActorCodeTaken(input.code, id)) {
           throw createAppError({
             code: "VALIDATION_ERROR",
-            message: "Supply chain code already exists",
+            message: "Actor code already exists",
             statusCode: 400,
             details: { issues: [{ path: "code", message: "Code must be unique" }] },
           });
         }
 
-        const updated = updateSupplyChain(id, {
+        const updated = updateActor(id, {
           name: input.name,
           code: input.code,
-          description: input.description,
-          status: input.status as GetSupplyChainOutput["status"] | undefined,
-          commodityId: input.commodityId,
+          type: input.type as GetActorOutput["type"] | undefined,
+          address: input.address
+            ? {
+                line1: input.address.line1,
+                city: input.address.city,
+                region: input.address.region,
+                country: input.address.country,
+              }
+            : undefined,
+          status: input.status as GetActorOutput["status"] | undefined,
         });
 
         if (!updated) {
           throw createAppError({
             code: "NOT_FOUND",
-            message: "Supply chain not found",
+            message: "Actor not found",
             statusCode: 404,
           });
         }
 
         return jsonResponse({ data: updated });
       } catch (error) {
-        return errorResponse({
-          error,
-          fallbackMessage: "Failed to update supply chain",
-        });
+        return errorResponse({ error, fallbackMessage: "Failed to update actor" });
       }
     },
   });
@@ -114,31 +115,28 @@ export async function DELETE(
       try {
         const { id } = await context.params;
 
-        if (isSupplyChainReferencedByAllocation(id)) {
+        if (isActorReferencedByEvent(id)) {
           throw createAppError({
             code: "VALIDATION_ERROR",
-            message: "Cannot delete supply chain with existing batch allocations",
+            message: "Cannot delete actor referenced by supply chain events",
             statusCode: 400,
           });
         }
 
-        const deleted = deleteSupplyChain(id);
+        const deleted = deleteActor(id);
 
         if (!deleted) {
           throw createAppError({
             code: "NOT_FOUND",
-            message: "Supply chain not found",
+            message: "Actor not found",
             statusCode: 404,
           });
         }
 
-        const output: DeleteSupplyChainOutput = { success: true, id };
+        const output: DeleteActorOutput = { success: true, id };
         return jsonResponse({ data: output });
       } catch (error) {
-        return errorResponse({
-          error,
-          fallbackMessage: "Failed to delete supply chain",
-        });
+        return errorResponse({ error, fallbackMessage: "Failed to delete actor" });
       }
     },
   });

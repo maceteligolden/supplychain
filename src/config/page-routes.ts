@@ -22,10 +22,16 @@ export function farmDetailPage(farmId: string): string {
   return `/farms/${farmId}`;
 }
 
+/** Builds the supply chain detail page path. */
+export function supplyChainDetailPage(supplyChainId: string): string {
+  return `/supply-chains/${supplyChainId}`;
+}
+
 /** Routes enabled in the sidebar during the current POC phase. */
 export const ACTIVE_NAV_ROUTES: PageRouteKey[] = [
   "dashboard",
   "commodities",
   "farms",
+  "actors",
   "supplyChains",
 ];

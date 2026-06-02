@@ -11,6 +11,7 @@ const SEED_SUPPLY_CHAINS: SupplyChainInterface[] = [
     code: "GH_COCOA_EXPORT",
     description: "Farm to export port — Ghana cocoa traceability route",
     status: "ACTIVE",
+    commodityId: "commodity_cocoa_001",
     createdAt: "2025-01-15T08:00:00.000Z",
     updatedAt: "2025-01-15T08:00:00.000Z",
   },
@@ -20,6 +21,7 @@ const SEED_SUPPLY_CHAINS: SupplyChainInterface[] = [
     code: "SD_GUM_EXPORT",
     description: "Farm to export port — Sudan gum arabic traceability route",
     status: "ACTIVE",
+    commodityId: "commodity_gum_arabic_001",
     createdAt: "2025-01-15T08:00:00.000Z",
     updatedAt: "2025-01-15T08:00:00.000Z",
   },
@@ -56,6 +58,7 @@ export function createSupplyChain(input: CreateSupplyChainInput): SupplyChainInt
     code,
     description: input.description?.trim() || undefined,
     status: input.status,
+    commodityId: input.commodityId,
     createdAt: now,
     updatedAt: now,
   };
@@ -87,6 +90,7 @@ export function updateSupplyChain(
         ? input.description.trim() || undefined
         : existing.description,
     status: input.status ?? existing.status,
+    commodityId: input.commodityId ?? existing.commodityId,
     updatedAt: new Date().toISOString(),
   };
 

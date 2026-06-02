@@ -9,6 +9,7 @@ import {
   getAllSupplyChains,
   isSupplyChainCodeTaken,
 } from "@/mocks/data/supply-chains";
+import { syncSupplyChainAllocations } from "@/mocks/data/batch-allocations";
 import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
 import type {
   GetSupplyChainOutput,
@@ -53,7 +54,12 @@ export async function POST(request: Request): Promise<Response> {
           code: input.code,
           description: input.description || undefined,
           status: input.status as GetSupplyChainOutput["status"],
+          commodityId: input.commodityId,
         });
+
+        if (input.allocations && input.allocations.length > 0) {
+          syncSupplyChainAllocations(supplyChain.id, input.allocations);
+        }
 
         return jsonResponse({ data: supplyChain, status: 201 });
       } catch (error) {

@@ -15,6 +15,10 @@ export const API_ROUTES = {
     list: "/api/commodities",
     detail: (id: string): string => `/api/commodities/${id}`,
   },
+  actors: {
+    list: "/api/actors",
+    detail: (id: string): string => `/api/actors/${id}`,
+  },
   farms: {
     list: "/api/farms",
     detail: (id: string): string => `/api/farms/${id}`,
@@ -22,13 +26,19 @@ export const API_ROUTES = {
   supplyChains: {
     list: "/api/supply-chains",
     detail: (id: string): string => `/api/supply-chains/${id}`,
+    allocations: (id: string): string => `/api/supply-chains/${id}/allocations`,
+    events: (id: string): string => `/api/supply-chains/${id}/events`,
+    eventDetail: (id: string, eventId: string): string =>
+      `/api/supply-chains/${id}/events/${eventId}`,
   },
   batches: {
     list: (farmId: string): string => `/api/batches?farmId=${farmId}`,
     detail: (id: string): string => `/api/batches/${id}`,
   },
   batchAllocations: {
-    list: (farmId: string): string => `/api/batch-allocations?farmId=${farmId}`,
+    listByFarm: (farmId: string): string => `/api/batch-allocations?farmId=${farmId}`,
+    listBySupplyChain: (supplyChainId: string): string =>
+      `/api/batch-allocations?supplyChainId=${supplyChainId}`,
     detail: (id: string): string => `/api/batch-allocations/${id}`,
   },
 } as const;

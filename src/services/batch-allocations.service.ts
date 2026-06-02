@@ -14,7 +14,21 @@ export async function getBatchAllocationsByFarmId(
   farmId: string,
 ): Promise<GetBatchAllocationsOutput> {
   return fetchJson<GetBatchAllocationsOutput>({
-    url: API_ROUTES.batchAllocations.list(farmId),
+    url: API_ROUTES.batchAllocations.listByFarm(farmId),
+    options: {
+      method: "GET",
+      cache: "no-store",
+      headers: await getAuthHeaders(),
+    },
+  });
+}
+
+/** Returns allocations for a supply chain from the mock API. */
+export async function getBatchAllocationsBySupplyChainId(
+  supplyChainId: string,
+): Promise<GetBatchAllocationsOutput> {
+  return fetchJson<GetBatchAllocationsOutput>({
+    url: API_ROUTES.batchAllocations.listBySupplyChain(supplyChainId),
     options: {
       method: "GET",
       cache: "no-store",

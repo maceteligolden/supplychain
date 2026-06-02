@@ -1,6 +1,7 @@
 "use client";
 
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import Link from "next/link";
+import { EyeIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supplyChainDetailPage } from "@/config/page-routes";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
 export interface SupplyChainActionsMenuProps {
@@ -45,6 +47,12 @@ export function SupplyChainActionsMenu({
       />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
+          <DropdownMenuItem
+            render={<Link href={supplyChainDetailPage(supplyChain.id)} />}
+          >
+            <EyeIcon className="size-4" />
+            View chain
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={(): void => onEdit(supplyChain)}>
             <PencilIcon className="size-4" />
             Edit

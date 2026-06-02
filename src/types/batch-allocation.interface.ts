@@ -32,6 +32,10 @@ export type GetBatchAllocationsOutput = {
   total: number;
 };
 
+export type GetBatchAllocationsQuery =
+  | { farmId: string; supplyChainId?: never }
+  | { supplyChainId: string; farmId?: never };
+
 export type GetBatchAllocationOutput = BatchAllocationInterface;
 
 export type DeleteBatchAllocationOutput = {

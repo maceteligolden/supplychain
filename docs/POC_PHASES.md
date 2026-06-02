@@ -34,9 +34,11 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 ### Phase 5 — FR-6 Supply Chain Management
 
 - Full CRUD via `/api/supply-chains` and `/api/supply-chains/[id]`
-- Supply chains list at `/supply-chains` with search, status filter, table/grid, pagination
+- **3-step wizard** (create + edit): commodity → farm carousel → batch allocations → chain details
+- Supply chain detail at `/supply-chains/[supplyChainId]` — stats, allocation summary, event timeline
 - Pre-seeded **Ghana Cocoa Export Chain** and **Sudan Gum Arabic Export Chain**
 - Status enum: ACTIVE, INACTIVE (only ACTIVE chains accept allocations)
+- Allocation sync via `PUT /api/supply-chains/[id]/allocations`
 
 ### Phase 6 — FR-5 Batch Management (farm-scoped)
 
@@ -55,15 +57,30 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - Batch status auto-updates: CREATED → PARTIALLY_ALLOCATED → FULLY_ALLOCATED
 - Supply chain delete blocked when referenced by allocations
 
+### Phase 9 — FR-8 Event Management
+
+- Chain-level lifecycle events on `/supply-chains/[supplyChainId]`
+- Ordered types: HARVEST → COLLECTION → PROCESSING → WAREHOUSING → EXPORT → IN_TRANSIT → DELIVERED
+- Forward-only serialization (skips allowed); no delete; notes and actor editable only
+- Ecommerce-style vertical event timeline
+- API: `GET/POST /api/supply-chains/[id]/events`, `PATCH /api/supply-chains/[id]/events/[eventId]`
+- Pre-seeded HARVEST + COLLECTION on Ghana Cocoa Export Chain (linked to seeded actors)
+
+### Phase 8 — FR-4 Actor Management
+
+- Full CRUD via `/api/actors` and `/api/actors/[id]`
+- Actors list at `/actors` with search, type/status filters, table/grid, pagination
+- Types: COLLECTION_CENTRE, PROCESSOR, WAREHOUSE, EXPORTER, CARRIER
+- Pre-seeded Kumasi Collection Centre, Accra Cocoa Processing Ltd, Tema Export Terminal
+- Events require an **ACTIVE** actor (`actorId`); delete blocked when referenced by events
+
 ## Upcoming (in order)
 
-| Phase | Requirement                     | Key screens                          |
-| ----- | ------------------------------- | ------------------------------------ |
-| 2     | Dashboard KPIs                  | Real summary metrics from mock API   |
-| 8     | FR-4 Actor Management           | Collection centres, processors, etc. |
-| 9     | FR-8 Event Management           | HARVEST, COLLECTION, EXPORT, etc.    |
-| 10    | FR-9 Traceability Visualization | Chain-of-custody graph               |
-| 11    | FR-10 Reporting                 | Traceability PDF reports             |
+| Phase | Requirement                     | Key screens                        |
+| ----- | ------------------------------- | ---------------------------------- |
+| 2     | Dashboard KPIs                  | Real summary metrics from mock API |
+| 10    | FR-9 Traceability Visualization | Chain-of-custody graph             |
+| 11    | FR-10 Reporting                 | Traceability PDF reports           |
 
 ## Mock credentials (Phase 1)
 

@@ -16,7 +16,7 @@ Login: `john@example.com` / `SuperAdmin123!`
 
 ## Current phase
 
-**FR-6 Supply Chains**, **FR-5 Batches**, and **FR-7 Allocations** — supply chains at `/supply-chains`; farm detail at `/farms/[farmId]` with batch stats and management tabs.
+**FR-4 Actors**, **FR-6 Supply Chains**, **FR-5/FR-7 Batches & Allocations**, and **FR-8 Events** — actors at `/actors`; wizard at `/supply-chains`; detail with allocations + event timeline; farm detail at `/farms/[farmId]`.
 
 ## License
 

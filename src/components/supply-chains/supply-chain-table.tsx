@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { SupplyChainActionsMenu } from "@/components/supply-chains/supply-chain-actions-menu";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supplyChainDetailPage } from "@/config/page-routes";
 import { SUPPLY_CHAIN_STATUS_LABELS } from "@/config/supply-chain-status";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
@@ -61,7 +64,11 @@ export function SupplyChainTable({
       <TableBody>
         {supplyChains.map((chain) => (
           <TableRow key={chain.id}>
-            <TableCell className="font-medium">{chain.name}</TableCell>
+            <TableCell className="font-medium">
+              <Link href={supplyChainDetailPage(chain.id)} className="hover:underline">
+                {chain.name}
+              </Link>
+            </TableCell>
             <TableCell>
               <code className="text-xs">{chain.code}</code>
             </TableCell>
