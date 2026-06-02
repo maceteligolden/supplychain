@@ -1,22 +1,22 @@
-# SupplyChain
+# Traceability Platform
 
-Next.js supply chain management platform with strict TypeScript, Tailwind design tokens, shadcn/ui, Jotai state, and Joi validation.
+Next.js supply chain traceability POC with strict TypeScript, mock swap-ready API routes, shadcn/ui, and Joi validation.
 
 ## Getting started
 
-See [docs/SETUP.md](./docs/SETUP.md) for full project setup, conventions, and architecture.
+See [docs/SETUP.md](./docs/SETUP.md) and [docs/POC_PHASES.md](./docs/POC_PHASES.md).
 
 ```bash
+cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-## Key decisions
+Login: `john@example.com` / `SuperAdmin123!`
 
-- **Type safety**: no `any`, explicit return types, `Input`/`Output`/`Interface`/`Props` naming suffixes
-- **Styling**: colors and spacing in `design-tokens/` + `tailwind.config.ts`; no arbitrary Tailwind values in app code
-- **Components**: shadcn/ui with JSDoc on components and interface fields
-- **Quality gates**: Husky pre-commit (lint-staged) and pre-push (lint + build)
+## Current phase
+
+**FR-1 Authentication** — login, session cookie, protected app shell, placeholder dashboard.
 
 ## License
 

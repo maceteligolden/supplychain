@@ -67,11 +67,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/components/ui/**"],
+    files: ["src/components/ui/**", "src/hooks/**"],
     rules: {
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "better-tailwindcss/no-restricted-classes": "off",
+      "react-hooks/set-state-in-effect": "off",
     },
   },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "node_modules/**"]),

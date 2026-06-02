@@ -7,11 +7,14 @@ export interface AppMetaInterface {
   tagline: string;
 }
 
-/** Global read-only app metadata used across layout and hero sections. */
+/** Global read-only app metadata used across layout and auth pages. */
 export const appMetaAtom = atom<AppMetaInterface>({
-  appName: "SupplyChain",
-  tagline: "Track inventory, shipments, and fulfillment in one place.",
+  appName: "Traceability Platform",
+  tagline: "Farm-to-export supply chain traceability",
 });
 
 /** Whether the mobile navigation drawer is open. */
 export const mobileNavOpenAtom = atom<boolean>(false);
+
+/** Whether the desktop sidebar is collapsed to icon-only mode. */
+export const sidebarCollapsedAtom = atom<boolean>(false);

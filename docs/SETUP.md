@@ -1,6 +1,8 @@
-# SupplyChain — Project setup
+# Traceability Platform — Project setup
 
-Supply chain management frontend built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, **shadcn/ui**, **Jotai**, and **Joi**.
+Supply chain **traceability POC** frontend built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, **shadcn/ui**, **Jotai**, and **Joi**.
+
+See [POC_PHASES.md](./POC_PHASES.md) for the sequential build roadmap.
 
 ## Prerequisites
 
@@ -11,11 +13,14 @@ Supply chain management frontend built with **Next.js 16**, **TypeScript**, **Ta
 
 ```bash
 cd supplychain
+cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) — you will be redirected to `/login`.
+
+**Mock Super Admin credentials:** `john@example.com` / `SuperAdmin123!`
 
 ## Scripts
 
@@ -33,59 +38,44 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 src/
-├── app/              # Next.js App Router pages and layouts
-├── components/       # UI components (ui/ = shadcn, feature folders)
-├── lib/              # Shared utilities (logger, errors, validation)
-└── store/            # Jotai atoms
-design-tokens/        # Color tokens (source of truth)
-tailwind.config.ts    # Tailwind theme extension
+├── app/
+│   ├── (ops)/          # Authenticated pages (dashboard, future modules)
+│   ├── login/          # Public login page
+│   └── api/            # Mock API routes (swap-ready for MongoDB)
+├── config/             # env.ts, page-routes.ts, api-routes.ts (single source)
+├── services/           # UI data entry point — never fetch directly in components
+├── mocks/data/         # Mock data — API handlers only, never UI
+├── types/              # Domain interfaces
+├── components/         # Feature + layout + ui (shadcn)
+├── lib/                # errors, logger, validation, auth, api helpers
+└── store/              # Jotai atoms
 ```
+
+## Mock UI & API architecture
+
+Data flows: **Page → Service → `/api/*` route → mock data**. When MongoDB is connected, only API route handlers change.
+
+| Config file                 | Purpose                            |
+| --------------------------- | ---------------------------------- |
+| `src/config/env.ts`         | Only file that reads `process.env` |
+| `src/config/page-routes.ts` | All page/navigation paths          |
+| `src/config/api-routes.ts`  | All API path constants             |
+
+Auth uses httpOnly session cookies set by `POST /api/auth/login`. Middleware protects all routes except `/login`.
 
 ## TypeScript conventions
 
-| Kind              | Suffix      | Example            |
-| ----------------- | ----------- | ------------------ |
-| Function args     | `Input`     | `CreateOrderInput` |
-| Function returns  | `Output`    | `ListOrdersOutput` |
-| Domain interfaces | `Interface` | `OrderInterface`   |
-| Component props   | `Props`     | `OrderCardProps`   |
-
-- No `any` — enforced by ESLint and `strict` TypeScript.
-- Explicit return types on exported functions.
-
-## Styling
-
-- Colors defined in `design-tokens/colors.ts` and wired through `tailwind.config.ts`.
-- Do not use Tailwind arbitrary values (`bg-[#fff]`, `w-[13px]`). ESLint flags these via `eslint-plugin-better-tailwindcss`.
-- Use semantic tokens: `text-brand-primary-600`, `gap-section`, `max-w-content`.
-
-## State management (Jotai)
-
-Atoms live in `src/store/`. Wrap client components with `JotaiProvider` (already in root layout).
-
-## Validation (Joi)
-
-Define schemas in `src/lib/validation/` and validate via the shared `validate()` helper, which throws structured `AppError` instances.
-
-## Error handling & logging
-
-- `src/lib/errors.ts` — `createAppError`, `normalizeError`, `isAppError`
-- `src/lib/logger.ts` — structured logger (replace with external service in production)
-- `src/app/error.tsx` — global error UI
-- `src/components/error-boundary.tsx` — client error boundary
+| Kind              | Suffix      | Example          |
+| ----------------- | ----------- | ---------------- |
+| Function args     | `Input`     | `LoginInput`     |
+| Function returns  | `Output`    | `LoginOutput`    |
+| Domain interfaces | `Interface` | `UserInterface`  |
+| Component props   | `Props`     | `LoginFormProps` |
 
 ## Git hooks (Husky + lint-staged)
 
-- **pre-commit**: lint-staged runs ESLint + Prettier on staged files
-- **pre-push**: full `npm run lint` and `npm run build` before any branch push
-
-## Adding shadcn components
-
-```bash
-npx shadcn@latest add card input
-```
-
-Generated files land in `src/components/ui/`. shadcn files are ESLint-exempt for arbitrary Tailwind values used internally by the library.
+- **pre-commit**: lint-staged (ESLint + Prettier on staged files)
+- **pre-push**: full `npm run lint` and `npm run build`
 
 ## Cursor rules
 
