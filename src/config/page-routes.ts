@@ -18,4 +18,4 @@ export const PAGE_ROUTES = {
 export type PageRouteKey = keyof typeof PAGE_ROUTES;
 
 /** Routes enabled in the sidebar during the current POC phase. */
-export const ACTIVE_NAV_ROUTES: PageRouteKey[] = ["dashboard", "commodities"];
+export const ACTIVE_NAV_ROUTES: PageRouteKey[] = ["dashboard", "commodities", "farms"];

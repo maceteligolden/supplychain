@@ -16,7 +16,7 @@ Login: `john@example.com` / `SuperAdmin123!`
 
 ## Current phase
 
-**FR-2 Commodity Management** — full CRUD at `/commodities` with mock API routes.
+**FR-3 Farm Management** — full CRUD at `/farms` with mock API routes, linked to commodities.
 
 ## License
 

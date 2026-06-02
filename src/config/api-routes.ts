@@ -15,4 +15,8 @@ export const API_ROUTES = {
     list: "/api/commodities",
     detail: (id: string): string => `/api/commodities/${id}`,
   },
+  farms: {
+    list: "/api/farms",
+    detail: (id: string): string => `/api/farms/${id}`,
+  },
 } as const;

@@ -19,13 +19,23 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - File upload stub (local preview, mock imageUrl on save)
 - Auto-generated commodity code from name (editable)
 - Unit enum: KG, TON, LITRE, BAG, UNIT
+- List toolbar: search, filter, layout switcher, pagination, toast feedback
+
+### Phase 4 — FR-3 Farm Management
+
+- Full CRUD via `/api/farms` and `/api/farms/[id]`
+- Farms list at `/farms` with search, commodity filter, table/grid layout, pagination
+- Pre-seeded **Ashanti Cocoa Farm** and **Kordofan Gum Farm**
+- Location fields: country, region, city, optional GPS coordinates
+- Linked to commodities — farms require an existing commodity
+- Auto-generated farm code from name (editable)
+- Toast feedback on create, update, and delete
 
 ## Upcoming (in order)
 
 | Phase | Requirement                     | Key screens                          |
 | ----- | ------------------------------- | ------------------------------------ |
 | 2     | Dashboard KPIs                  | Real summary metrics from mock API   |
-| 4     | FR-3 Farm Management            | Farms list/create, location          |
 | 5     | FR-4 Actor Management           | Collection centres, processors, etc. |
 | 6     | FR-5 Batch Management           | Harvest batches                      |
 | 7     | FR-6 Supply Chain Management    | Supply chain journeys                |

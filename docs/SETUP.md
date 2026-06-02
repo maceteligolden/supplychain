@@ -82,6 +82,23 @@ Action feedback: success and error toasts (Sonner) after create, update, or dele
 
 API routes: `GET/POST /api/commodities`, `GET/PATCH/DELETE /api/commodities/[id]`.
 
+## Farm management (FR-3)
+
+Route: `/farms` (sidebar link when authenticated).
+
+| Field     | Description                                                      |
+| --------- | ---------------------------------------------------------------- |
+| Name      | Display name (e.g. Ashanti Cocoa Farm)                           |
+| Code      | Uppercase unique identifier — auto-generated from name, editable |
+| Commodity | Must link to an existing commodity                               |
+| Location  | Country, region, city, optional latitude/longitude               |
+
+Pre-seeded mock farms: **Ashanti Cocoa Farm** (Cocoa, Ghana) and **Kordofan Gum Farm** (Gum Arabic, Sudan).
+
+List controls: search, commodity filter, table/grid layout switcher, client-side pagination, toast feedback.
+
+API routes: `GET/POST /api/farms`, `GET/PATCH/DELETE /api/farms/[id]`.
+
 ## TypeScript conventions
 
 | Kind              | Suffix      | Example          |
