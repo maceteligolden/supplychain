@@ -9,6 +9,7 @@ import { getBatchesByFarmId } from "@/services/batches.service";
 import { getCommodities } from "@/services/commodities.service";
 import { getFarms } from "@/services/farms.service";
 import { getActors } from "@/services/actors.service";
+import { getSupplyChainRiskSummary } from "@/services/supply-chain-risk.service";
 import { getSupplyChainEvents } from "@/services/supply-chain-events.service";
 import { getSupplyChainById } from "@/services/supply-chains.service";
 import type { BatchInterface } from "@/types/batch.interface";
@@ -27,6 +28,7 @@ export default async function SupplyChainDetailPage({
 
   const [
     supplyChain,
+    riskSummary,
     { commodities },
     { farms },
     { allocations },
@@ -34,6 +36,7 @@ export default async function SupplyChainDetailPage({
     { actors },
   ] = await Promise.all([
     getSupplyChainById(supplyChainId),
+    getSupplyChainRiskSummary(supplyChainId),
     getCommodities(),
     getFarms(),
     getBatchAllocationsBySupplyChainId(supplyChainId),
@@ -87,6 +90,7 @@ export default async function SupplyChainDetailPage({
       commodities={commodities}
       batchesByFarmId={batchesByFarmId}
       allAllocations={allAllocations}
+      riskSummary={riskSummary}
     />
   );
 }

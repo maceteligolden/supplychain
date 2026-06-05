@@ -1,3 +1,5 @@
+import type { SupplyChainOverallRiskLevel } from "@/config/supply-chain-risk";
+
 export interface DashboardKpiInterface {
   /** Unique identifier for the KPI card. */
   id: string;
@@ -20,6 +22,8 @@ export interface OngoingSupplyChainInterface {
   progressLabel: string;
   /** Number of lifecycle events recorded on this chain. */
   eventsRecordedCount: number;
+  /** Aggregated deforestation risk from linked farm assessments. */
+  overallRiskLevel: SupplyChainOverallRiskLevel;
 }
 
 export interface DashboardChartPointInterface {

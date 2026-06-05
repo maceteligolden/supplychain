@@ -18,6 +18,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PAGE_ROUTES, supplyChainDetailPage } from "@/config/page-routes";
+import {
+  SUPPLY_CHAIN_OVERALL_RISK_BADGE_VARIANT,
+  SUPPLY_CHAIN_OVERALL_RISK_LABELS,
+} from "@/config/supply-chain-risk";
+import { Badge } from "@/components/ui/badge";
 import type { OngoingSupplyChainInterface } from "@/types/dashboard.interface";
 
 export interface OngoingChainsCardProps {
@@ -55,6 +60,7 @@ export function OngoingChainsCard({
                 <TableHead>Name</TableHead>
                 <TableHead>Commodity</TableHead>
                 <TableHead>Progress</TableHead>
+                <TableHead>Deforestation risk</TableHead>
                 <TableHead>Events</TableHead>
               </TableRow>
             </TableHeader>
@@ -71,6 +77,15 @@ export function OngoingChainsCard({
                   </TableCell>
                   <TableCell>{chain.commodityName}</TableCell>
                   <TableCell>{chain.progressLabel}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        SUPPLY_CHAIN_OVERALL_RISK_BADGE_VARIANT[chain.overallRiskLevel]
+                      }
+                    >
+                      {SUPPLY_CHAIN_OVERALL_RISK_LABELS[chain.overallRiskLevel]}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{chain.eventsRecordedCount}</TableCell>
                 </TableRow>
               ))}

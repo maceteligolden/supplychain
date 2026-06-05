@@ -18,9 +18,9 @@ const SEED_BATCHES: BatchInterface[] = [
     harvestDate: "2025-02-01",
     quantity: 5000,
     unit: "KG",
-    status: "CREATED",
+    status: "PARTIALLY_ALLOCATED",
     createdAt: "2025-02-01T08:00:00.000Z",
-    updatedAt: "2025-02-01T08:00:00.000Z",
+    updatedAt: "2025-02-02T10:00:00.000Z",
   },
   {
     id: "batch_kordofan_2025_001",
@@ -30,9 +30,9 @@ const SEED_BATCHES: BatchInterface[] = [
     harvestDate: "2025-02-05",
     quantity: 2000,
     unit: "KG",
-    status: "CREATED",
+    status: "PARTIALLY_ALLOCATED",
     createdAt: "2025-02-05T08:00:00.000Z",
-    updatedAt: "2025-02-05T08:00:00.000Z",
+    updatedAt: "2025-02-06T11:00:00.000Z",
   },
 ];
 

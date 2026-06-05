@@ -10,6 +10,7 @@ import type { BatchInterface } from "@/types/batch.interface";
 import type { CommodityInterface } from "@/types/commodity.interface";
 import type { FarmInterface } from "@/types/farm.interface";
 import type { SupplyChainEventInterface } from "@/types/supply-chain-event.interface";
+import type { SupplyChainRiskSummaryInterface } from "@/types/supply-chain-risk.interface";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
 export interface SupplyChainDetailClientProps {
@@ -23,6 +24,7 @@ export interface SupplyChainDetailClientProps {
   commodities: CommodityInterface[];
   batchesByFarmId: Record<string, BatchInterface[]>;
   allAllocations: BatchAllocationInterface[];
+  riskSummary: SupplyChainRiskSummaryInterface;
 }
 
 /**
@@ -41,6 +43,7 @@ export function SupplyChainDetailClient({
   commodities,
   batchesByFarmId,
   allAllocations,
+  riskSummary,
 }: SupplyChainDetailClientProps): React.JSX.Element {
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -54,6 +57,7 @@ export function SupplyChainDetailClient({
         farms={farms}
         events={events}
         actors={actors}
+        riskSummary={riskSummary}
         onEdit={(): void => setWizardOpen(true)}
       />
       <SupplyChainWizardDialog

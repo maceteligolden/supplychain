@@ -9,9 +9,15 @@ import {
   getBatchesByFarmId,
   isBatchNumberTaken,
 } from "@/mocks/data/batches";
+import { getFarmBoundaryByFarmId } from "@/mocks/data/farm-boundaries";
+import { runFarmAssessment } from "@/mocks/data/farm-assessments";
 import { getFarmById } from "@/mocks/data/farms";
 import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
-import type { GetBatchesOutput } from "@/types/batch.interface";
+import type {
+  BatchCreationStepInterface,
+  CreateBatchOutput,
+  GetBatchesOutput,
+} from "@/types/batch.interface";
 
 export async function GET(request: Request): Promise<Response> {
   return withMockDelay({
@@ -76,9 +82,62 @@ export async function POST(request: Request): Promise<Response> {
           harvestDate: input.harvestDate,
           quantity: input.quantity,
           batchNumber: input.batchNumber,
+          commodityId: input.commodityId,
         });
 
-        return jsonResponse({ data: batch, status: 201 });
+        const steps: BatchCreationStepInterface[] = [
+          {
+            id: "create-batch",
+            label: "Harvest batch recorded",
+            status: "completed",
+            detail: batch.batchNumber,
+          },
+        ];
+
+        let assessment = null;
+        const boundary = getFarmBoundaryByFarmId(input.farmId);
+
+        if (boundary) {
+          try {
+            assessment = runFarmAssessment(input.farmId);
+            steps.push({
+              id: "run-assessment",
+              label: "Deforestation assessment completed",
+              status: "completed",
+              detail: `${assessment.analysis.deforestationPercent}% deforestation · ${assessment.riskLevel} risk`,
+            });
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "Assessment failed unexpectedly";
+            steps.push({
+              id: "run-assessment",
+              label: "Deforestation assessment failed",
+              status: "failed",
+              detail: message,
+            });
+          }
+        } else {
+          steps.push({
+            id: "run-assessment",
+            label: "Deforestation assessment skipped",
+            status: "skipped",
+            detail: "Farm boundary not mapped yet",
+          });
+        }
+
+        steps.push({
+          id: "complete",
+          label: "Batch workflow complete",
+          status: "completed",
+        });
+
+        const output: CreateBatchOutput = {
+          batch,
+          assessment,
+          steps,
+        };
+
+        return jsonResponse({ data: output, status: 201 });
       } catch (error) {
         return errorResponse({ error, fallbackMessage: "Failed to create batch" });
       }

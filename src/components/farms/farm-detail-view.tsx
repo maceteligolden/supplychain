@@ -5,6 +5,7 @@ import { ArrowLeftIcon } from "lucide-react";
 
 import { AllocationsTab } from "@/components/batch-allocations/allocations-tab";
 import { BatchesTab } from "@/components/batches/batches-tab";
+import { FarmDeforestationTab } from "@/components/farms/farm-deforestation-tab";
 import { StatCard } from "@/components/layout/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,9 @@ import { cn } from "@/lib/utils";
 import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
 import type { BatchInterface } from "@/types/batch.interface";
 import type { CommodityInterface } from "@/types/commodity.interface";
+import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
+import type { FarmLandCoverTimelinePointInterface } from "@/types/farm-land-cover.interface";
+import type { FarmBoundaryInterface } from "@/types/farm-boundary.interface";
 import type { FarmInterface, FarmOwnerInterface } from "@/types/farm.interface";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
@@ -39,6 +43,12 @@ export interface FarmDetailViewProps {
   allocations: BatchAllocationInterface[];
   /** Supply chains available for allocation. */
   supplyChains: SupplyChainInterface[];
+  /** Farm boundary polygon, if mapped. */
+  boundary: FarmBoundaryInterface | null;
+  /** Deforestation assessments for this farm, newest first. */
+  assessments: FarmAssessmentInterface[];
+  /** Land-cover timeline points for charting. */
+  landCoverTimeline: FarmLandCoverTimelinePointInterface[];
 }
 
 function formatDate(iso: string): string {
@@ -119,6 +129,9 @@ export function FarmDetailView({
   batches,
   allocations,
   supplyChains,
+  boundary,
+  assessments,
+  landCoverTimeline,
 }: FarmDetailViewProps): React.JSX.Element {
   const stats = getFarmBatchStats(batches);
   const coordinates =
@@ -184,120 +197,139 @@ export function FarmDetailView({
         </div>
       </header>
 
-      <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-foreground text-lg font-semibold tracking-tight">
-            Farm profile
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Owner, production estimate, and compliance details
-          </p>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <DetailField label="Owner">
-                <OwnerDetails owner={farm.owner} />
-              </DetailField>
-              <DetailField label="Annual production">
-                {farm.annualProductionEstimateKg !== undefined ? (
-                  <span className="font-medium tabular-nums">
-                    {farm.annualProductionEstimateKg.toLocaleString()}{" "}
-                    <span className="text-muted-foreground font-normal">kg</span>
-                  </span>
-                ) : (
-                  <EmptyValue>Not set</EmptyValue>
-                )}
-              </DetailField>
-              <DetailField label="Area">
-                {farm.areaHectares !== undefined ? (
-                  <span className="font-medium tabular-nums">
-                    {farm.areaHectares.toLocaleString()}{" "}
-                    <span className="text-muted-foreground font-normal">ha</span>
-                  </span>
-                ) : (
-                  <EmptyValue>Not mapped</EmptyValue>
-                )}
-              </DetailField>
-              <DetailField label="Declaration">
-                <DeclarationValue accepted={farm.declarationAccepted} />
-              </DetailField>
-            </dl>
-          </CardContent>
-        </Card>
-      </section>
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="deforestation">Deforestation</TabsTrigger>
+          <TabsTrigger value="operations">Operations</TabsTrigger>
+        </TabsList>
 
-      <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-foreground text-lg font-semibold tracking-tight">
-            Batch overview
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Harvest batches recorded for this farm
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard
-            label="Total batches"
-            value={stats.totalBatches}
-            description="Harvest batches recorded"
-          />
-          <StatCard
-            label="Unallocated batches"
-            value={stats.unallocatedBatches}
-            description="No quantity allocated yet"
-          />
-          <StatCard
-            label="Allocated batches"
-            value={stats.allocatedBatches}
-            description="Partially or fully allocated"
-          />
-        </div>
-      </section>
+        <TabsContent value="overview" className="gap-section flex flex-col pt-6">
+          <section className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-foreground text-lg font-semibold tracking-tight">
+                Farm profile
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Owner, production estimate, and compliance details
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <dl className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                  <DetailField label="Owner">
+                    <OwnerDetails owner={farm.owner} />
+                  </DetailField>
+                  <DetailField label="Annual production">
+                    {farm.annualProductionEstimateKg !== undefined ? (
+                      <span className="font-medium tabular-nums">
+                        {farm.annualProductionEstimateKg.toLocaleString()}{" "}
+                        <span className="text-muted-foreground font-normal">kg</span>
+                      </span>
+                    ) : (
+                      <EmptyValue>Not set</EmptyValue>
+                    )}
+                  </DetailField>
+                  <DetailField label="Area">
+                    {farm.areaHectares !== undefined ? (
+                      <span className="font-medium tabular-nums">
+                        {farm.areaHectares.toLocaleString()}{" "}
+                        <span className="text-muted-foreground font-normal">ha</span>
+                      </span>
+                    ) : (
+                      <EmptyValue>Not mapped</EmptyValue>
+                    )}
+                  </DetailField>
+                  <DetailField label="Declaration">
+                    <DeclarationValue accepted={farm.declarationAccepted} />
+                  </DetailField>
+                </dl>
+              </CardContent>
+            </Card>
+          </section>
 
-      <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-foreground text-lg font-semibold tracking-tight">
-            Operations
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Manage harvest batches and supply chain allocations
-          </p>
-        </div>
-        <Card>
-          <CardHeader className="border-border border-b pb-4">
-            <CardTitle className="text-base font-semibold">
-              Batch & allocation
-            </CardTitle>
-            <CardDescription>
-              Record harvests and assign quantities to active supply chains
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <Tabs defaultValue="batches">
-              <TabsList>
-                <TabsTrigger value="batches">Batch management</TabsTrigger>
-                <TabsTrigger value="allocations">Allocation management</TabsTrigger>
-              </TabsList>
-              <TabsContent value="batches" className="pt-4">
-                <BatchesTab
-                  farmId={farm.id}
-                  batches={batches}
-                  farmCommodityIds={farm.commodityIds}
-                  commodities={commodities}
-                />
-              </TabsContent>
-              <TabsContent value="allocations" className="pt-4">
-                <AllocationsTab
-                  batches={batches}
-                  allocations={allocations}
-                  supplyChains={supplyChains}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </section>
+          <section className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-foreground text-lg font-semibold tracking-tight">
+                Batch overview
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Harvest batches recorded for this farm
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <StatCard
+                label="Total batches"
+                value={stats.totalBatches}
+                description="Harvest batches recorded"
+              />
+              <StatCard
+                label="Unallocated batches"
+                value={stats.unallocatedBatches}
+                description="No quantity allocated yet"
+              />
+              <StatCard
+                label="Allocated batches"
+                value={stats.allocatedBatches}
+                description="Partially or fully allocated"
+              />
+            </div>
+          </section>
+        </TabsContent>
+
+        <TabsContent value="deforestation" className="pt-6">
+          <FarmDeforestationTab
+            farm={farm}
+            boundary={boundary}
+            assessments={assessments}
+            landCoverTimeline={landCoverTimeline}
+          />
+        </TabsContent>
+
+        <TabsContent value="operations" className="pt-6">
+          <section className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-foreground text-lg font-semibold tracking-tight">
+                Batch & allocation
+              </h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Record harvests and assign quantities to active supply chains
+              </p>
+            </div>
+            <Card>
+              <CardHeader className="border-border border-b pb-4">
+                <CardTitle className="text-base font-semibold">Operations</CardTitle>
+                <CardDescription>
+                  Manage harvest batches and supply chain allocations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <Tabs defaultValue="batches">
+                  <TabsList>
+                    <TabsTrigger value="batches">Batch management</TabsTrigger>
+                    <TabsTrigger value="allocations">Allocation management</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="batches" className="pt-4">
+                    <BatchesTab
+                      farmId={farm.id}
+                      batches={batches}
+                      farmCommodityIds={farm.commodityIds}
+                      commodities={commodities}
+                    />
+                  </TabsContent>
+                  <TabsContent value="allocations" className="pt-4">
+                    <AllocationsTab
+                      batches={batches}
+                      allocations={allocations}
+                      supplyChains={supplyChains}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

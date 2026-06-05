@@ -1,6 +1,16 @@
 import type { CommodityUnit } from "@/config/commodity-units";
+import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
 
 export type BatchStatus = "CREATED" | "PARTIALLY_ALLOCATED" | "FULLY_ALLOCATED";
+
+export type BatchCreationStepStatus = "pending" | "completed" | "skipped" | "failed";
+
+export interface BatchCreationStepInterface {
+  id: string;
+  label: string;
+  status: BatchCreationStepStatus;
+  detail?: string;
+}
 
 export interface BatchInterface {
   /** Unique batch identifier. */
@@ -45,6 +55,12 @@ export type GetBatchesOutput = {
 };
 
 export type GetBatchOutput = BatchInterface;
+
+export type CreateBatchOutput = {
+  batch: BatchInterface;
+  assessment: FarmAssessmentInterface | null;
+  steps: BatchCreationStepInterface[];
+};
 
 export type DeleteBatchOutput = {
   success: boolean;

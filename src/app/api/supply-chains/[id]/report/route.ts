@@ -4,11 +4,13 @@ import { getAllActors } from "@/mocks/data/actors";
 import { getBatchById } from "@/mocks/data/batches";
 import { getBatchAllocationsBySupplyChainId } from "@/mocks/data/batch-allocations";
 import { getCommodityById } from "@/mocks/data/commodities";
+import { getLatestFarmAssessment } from "@/mocks/data/farm-assessments";
 import { getFarmById } from "@/mocks/data/farms";
 import { getSupplyChainEventsByChainId } from "@/mocks/data/supply-chain-events";
 import { getSupplyChainById } from "@/mocks/data/supply-chains";
 import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
 import type { BatchInterface } from "@/types/batch.interface";
+import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
 import type { FarmInterface } from "@/types/farm.interface";
 import type { GetSupplyChainReportOutput } from "@/types/supply-chain-report.interface";
 
@@ -58,6 +60,16 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
           getCommodityById(supplyChain.commodityId ?? "") ??
           (farms[0] ? getCommodityById(farms[0].commodityIds[0] ?? "") : undefined);
 
+        const latestAssessmentByFarmId = new Map<
+          string,
+          FarmAssessmentInterface | undefined
+        >(
+          farms.map((linkedFarm) => [
+            linkedFarm.id,
+            getLatestFarmAssessment(linkedFarm.id),
+          ]),
+        );
+
         const output: GetSupplyChainReportOutput = buildSupplyChainReport({
           supplyChain,
           commodity,
@@ -66,6 +78,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
           farms,
           events,
           actors,
+          latestAssessmentByFarmId,
         });
 
         return jsonResponse({ data: output });

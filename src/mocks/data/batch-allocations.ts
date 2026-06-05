@@ -7,7 +7,26 @@ import type {
 } from "@/types/batch-allocation.interface";
 import type { SupplyChainAllocationInput } from "@/types/supply-chain.interface";
 
-const SEED_ALLOCATIONS: BatchAllocationInterface[] = [];
+const SEED_ALLOCATIONS: BatchAllocationInterface[] = [
+  {
+    id: "allocation_gh_cocoa_ashanti_001",
+    batchId: "batch_ashanti_2025_001",
+    supplyChainId: "supply_chain_gh_cocoa_001",
+    quantity: 3000,
+    allocatedAt: "2025-02-02T10:00:00.000Z",
+    createdAt: "2025-02-02T10:00:00.000Z",
+    updatedAt: "2025-02-02T10:00:00.000Z",
+  },
+  {
+    id: "allocation_sd_gum_kordofan_001",
+    batchId: "batch_kordofan_2025_001",
+    supplyChainId: "supply_chain_sd_gum_001",
+    quantity: 1500,
+    allocatedAt: "2025-02-06T11:00:00.000Z",
+    createdAt: "2025-02-06T11:00:00.000Z",
+    updatedAt: "2025-02-06T11:00:00.000Z",
+  },
+];
 
 /** In-memory mutable mock store — swap for MongoDB in production. */
 let allocations: BatchAllocationInterface[] = [...SEED_ALLOCATIONS];

@@ -63,6 +63,57 @@ export function downloadSupplyChainReportPdf(report: SupplyChainReportInterface)
     (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
   y += 8;
 
+  if (y > 220) {
+    doc.addPage();
+    y = 16;
+  }
+
+  doc.text("Deforestation risk", 14, y);
+  y += 4;
+
+  autoTable(doc, {
+    startY: y,
+    head: [
+      [
+        "Farm",
+        "Risk",
+        "Deforestation",
+        "Forest cover",
+        "Protected overlap",
+        "Last assessed",
+      ],
+    ],
+    body:
+      report.deforestation.farms.length > 0
+        ? report.deforestation.farms.map((item) => [
+            item.farmName,
+            item.riskLabel,
+            item.deforestationPercent !== null ? `${item.deforestationPercent}%` : "—",
+            item.forestCoverPercent !== null ? `${item.forestCoverPercent}%` : "—",
+            item.protectedAreaOverlapPercent !== null
+              ? `${item.protectedAreaOverlapPercent}%`
+              : "—",
+            item.lastAssessedAt ? formatDateTime(item.lastAssessedAt) : "—",
+          ])
+        : [["No linked farms", "", "", "", "", ""]],
+    theme: "grid",
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [37, 99, 235] },
+  });
+
+  doc.setFontSize(9);
+  y =
+    (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
+  y += 4;
+  doc.text(`Overall chain risk: ${report.deforestation.overallRiskLabel}`, 14, y);
+  y += 8;
+
+  if (y > 240) {
+    doc.addPage();
+    y = 16;
+  }
+
+  doc.setFontSize(10);
   doc.text("Allocations", 14, y);
   y += 4;
 

@@ -23,12 +23,18 @@ export const API_ROUTES = {
   farms: {
     list: "/api/farms",
     detail: (id: string): string => `/api/farms/${id}`,
+    boundary: (id: string): string => `/api/farms/${id}/boundary`,
+    assessments: (id: string): string => `/api/farms/${id}/assessments`,
+    assessmentDetail: (id: string, assessmentId: string): string =>
+      `/api/farms/${id}/assessments/${assessmentId}`,
+    landCoverTimeline: (id: string): string => `/api/farms/${id}/land-cover-timeline`,
   },
   supplyChains: {
     list: "/api/supply-chains",
     detail: (id: string): string => `/api/supply-chains/${id}`,
     allocations: (id: string): string => `/api/supply-chains/${id}/allocations`,
     report: (id: string): string => `/api/supply-chains/${id}/report`,
+    riskSummary: (id: string): string => `/api/supply-chains/${id}/risk-summary`,
     events: (id: string): string => `/api/supply-chains/${id}/events`,
     eventDetail: (id: string, eventId: string): string =>
       `/api/supply-chains/${id}/events/${eventId}`,

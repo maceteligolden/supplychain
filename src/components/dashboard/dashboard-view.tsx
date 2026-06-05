@@ -29,7 +29,7 @@ export function DashboardView({
         description={`Welcome back, ${user.firstName}. Traceability overview for the POC.`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {summary.kpis.map((kpi) => (
           <StatCard
             key={kpi.id}

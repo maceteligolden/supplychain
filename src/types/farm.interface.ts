@@ -73,7 +73,7 @@ export type UpdateFarmInput = {
   commodityIds?: string[];
   location?: Partial<FarmLocationInterface>;
   annualProductionEstimateKg?: number;
-  areaHectares?: number;
+  areaHectares?: number | null;
   declarationAccepted?: boolean;
 };
 

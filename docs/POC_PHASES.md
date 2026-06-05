@@ -109,14 +109,42 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - React Flow (`@xyflow/react`) with pan/zoom controls; farm and actor nodes link to detail pages
 - Legend for event step states; empty-allocation message when no batches assigned
 
-## Deforestation module roadmap (upcoming)
+### Phase 13 — Deforestation: FR-11 Farm Boundary
 
-| Phase | Requirement    | Depends on                | Delivers                                                          |
-| ----- | -------------- | ------------------------- | ----------------------------------------------------------------- |
-| 13    | FR-11 Boundary | Farm                      | FarmBoundary, map draw/edit, area calc, status → MAPPED           |
-| 14    | FR-12–15       | Farm + Boundary           | FarmAssessment, mock deforestation analysis, risk LOW/MEDIUM/HIGH |
-| 15    | FR-16–17       | Assessments               | Farm assessment tab, history, land-cover timeline                 |
-| 16    | FR-18          | Farm risk + Supply chains | Chain-level risk summary on supply chain detail/dashboard         |
+- `FarmBoundary` entity — polygon coordinates per farm with geodesic **area in hectares** (`@turf/area`)
+- API: `GET/PUT/DELETE /api/farms/[id]/boundary` — mock store in `farm-boundaries.ts`
+- Farm detail **Farm boundary** section — click-to-draw polygon on Leaflet/OSM map
+- Draw UX: add corners → close shape → save; redraw and remove boundary supported
+- Status rules: first save `DRAFT` → `MAPPED`; delete reverts `MAPPED` → `DRAFT`; syncs `farm.areaHectares`
+- Seeded boundary on **Ashanti Cocoa Farm** (~4.91 ha, **ASSESSED** with demo assessment)
+
+### Phase 14 — Deforestation: FR-12–15 Farm Assessment
+
+- `FarmAssessment` entity — mock deforestation + protected-area analysis per farm boundary
+- Risk levels: **LOW**, **MEDIUM**, **HIGH** (deterministic mock from farm id + boundary centroid)
+- API: `GET/POST /api/farms/[id]/assessments`, `GET /api/farms/[id]/assessments/[assessmentId]`
+- Mock store in `farm-assessments.ts`; engine in `run-mock-assessment.ts`
+- Farm detail **Deforestation assessment** section — run assessment (requires boundary), latest result + history
+- Status rules: successful run sets **DRAFT** / **MAPPED** / **READY_FOR_ASSESSMENT** → **ASSESSED**
+- Seeded assessment on **Ashanti Cocoa Farm**
+
+### Phase 15 — Deforestation: FR-16–17 Assessment Tab & Land-Cover Timeline
+
+- Farm detail reorganized into **Overview**, **Deforestation**, and **Operations** tabs
+- **Deforestation tab** — boundary map, run assessment, selected result, land-cover chart, full history table
+- **Land-cover timeline** — mock satellite baseline (2020–2024) merged with assessment snapshots
+- API: `GET /api/farms/[id]/land-cover-timeline`; builder in `build-land-cover-timeline.ts`
+- Recharts line chart (forest cover + deforestation); selectable history rows highlight chart points
+- Seeded **3 assessments** on Ashanti Cocoa Farm for demo history and timeline
+
+### Phase 16 — Deforestation: FR-18 Chain-Level Risk Summary
+
+- Aggregates latest farm assessment risk across farms linked via batch allocations
+- Overall chain risk = highest assessed farm risk (**LOW** / **MEDIUM** / **HIGH**); **Unassessed** when no linked farm has an assessment
+- API: `GET /api/supply-chains/[id]/risk-summary`; builder in `build-risk-summary.ts`
+- Supply chain detail **Deforestation risk** card — overall badge + per-farm breakdown with links to farm detail
+- Dashboard **At-risk chains** KPI and **Deforestation risk** column on ongoing supply chains table
+- Seeded allocations: Ghana Cocoa → Ashanti (assessed), Sudan Gum → Kordofan (unassessed)
 
 ## Mock credentials (Phase 1)
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeftIcon, PencilIcon } from "lucide-react";
 
 import { EventTimeline } from "@/components/supply-chain-events/event-timeline";
+import { SupplyChainRiskSummary } from "@/components/supply-chains/supply-chain-risk-summary";
 import { SupplyChainExportMenu } from "@/components/supply-chains/supply-chain-export-menu";
 import { StatCard } from "@/components/layout/stat-card";
 import { CustodyGraphLoader } from "@/components/traceability/custody-graph-loader";
@@ -29,6 +30,7 @@ import type { BatchInterface } from "@/types/batch.interface";
 import type { CommodityInterface } from "@/types/commodity.interface";
 import type { FarmInterface } from "@/types/farm.interface";
 import type { SupplyChainEventInterface } from "@/types/supply-chain-event.interface";
+import type { SupplyChainRiskSummaryInterface } from "@/types/supply-chain-risk.interface";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
 export interface SupplyChainDetailViewProps {
@@ -46,6 +48,8 @@ export interface SupplyChainDetailViewProps {
   events: SupplyChainEventInterface[];
   /** Actors for event display and forms. */
   actors: ActorInterface[];
+  /** Deforestation risk summary for linked farms. */
+  riskSummary: SupplyChainRiskSummaryInterface;
   /** Opens the edit wizard. */
   onEdit: () => void;
 }
@@ -63,6 +67,7 @@ export function SupplyChainDetailView({
   farms,
   events,
   actors,
+  riskSummary,
   onEdit,
 }: SupplyChainDetailViewProps): React.JSX.Element {
   const stats = getSupplyChainStats({ allocations, batches, farms, events });
@@ -146,6 +151,8 @@ export function SupplyChainDetailView({
           description="Lifecycle milestones logged"
         />
       </div>
+
+      <SupplyChainRiskSummary riskSummary={riskSummary} />
 
       <Card>
         <CardContent className="pt-6">

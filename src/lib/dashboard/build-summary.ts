@@ -1,9 +1,11 @@
+import { buildSupplyChainRiskSummary } from "@/lib/supply-chain/build-risk-summary";
 import {
   getSupplyChainEventTypeOrder,
   SUPPLY_CHAIN_EVENT_TYPES,
   SUPPLY_CHAIN_EVENT_TYPE_LABELS,
   type SupplyChainEventType,
 } from "@/config/supply-chain-event-types";
+import type { SupplyChainOverallRiskLevel } from "@/config/supply-chain-risk";
 import type {
   DashboardChartPointInterface,
   DashboardKpiInterface,
@@ -12,7 +14,11 @@ import type {
   OngoingSupplyChainInterface,
 } from "@/types/dashboard.interface";
 import type { ActorInterface } from "@/types/actor.interface";
+import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
+import type { BatchInterface } from "@/types/batch.interface";
 import type { CommodityInterface } from "@/types/commodity.interface";
+import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
+import type { FarmInterface } from "@/types/farm.interface";
 import type { SupplyChainEventInterface } from "@/types/supply-chain-event.interface";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
@@ -26,7 +32,31 @@ export type BuildDashboardSummaryInput = {
   events: SupplyChainEventInterface[];
   commodities: CommodityInterface[];
   actors: ActorInterface[];
+  allocations: BatchAllocationInterface[];
+  batches: BatchInterface[];
+  farms: FarmInterface[];
+  latestAssessmentByFarmId: Map<string, FarmAssessmentInterface | undefined>;
 };
+
+function getChainOverallRiskLevel(
+  input: BuildDashboardSummaryInput,
+  supplyChainId: string,
+): SupplyChainOverallRiskLevel {
+  return buildSupplyChainRiskSummary({
+    supplyChainId,
+    allocations: input.allocations,
+    batches: input.batches,
+    farms: input.farms,
+    latestAssessmentByFarmId: input.latestAssessmentByFarmId,
+  }).overallRiskLevel;
+}
+
+function countAtRiskChains(input: BuildDashboardSummaryInput): number {
+  return input.supplyChains.filter((chain) => {
+    const risk = getChainOverallRiskLevel(input, chain.id);
+    return risk === "HIGH" || risk === "MEDIUM";
+  }).length;
+}
 
 function getFurthestEventType(
   chainEvents: SupplyChainEventInterface[],
@@ -96,6 +126,12 @@ function buildKpis(input: BuildDashboardSummaryInput): DashboardKpiInterface[] {
       value: input.events.length,
       description: "Recorded lifecycle events",
     },
+    {
+      id: "kpi-at-risk-chains",
+      label: "At-risk chains",
+      value: countAtRiskChains(input),
+      description: "Chains with medium or high farm risk",
+    },
   ];
 }
 
@@ -125,6 +161,7 @@ function buildOngoingSupplyChains(
         commodityName,
         progressLabel: getProgressLabel(furthest),
         eventsRecordedCount: chainEvents.length,
+        overallRiskLevel: getChainOverallRiskLevel(input, chain.id),
       };
     })
     .slice(0, ONGOING_CHAIN_LIMIT);

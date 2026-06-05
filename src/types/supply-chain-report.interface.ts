@@ -24,6 +24,28 @@ export interface SupplyChainReportEventInterface {
   notes?: string;
 }
 
+export interface SupplyChainReportDeforestationFarmInterface {
+  /** Farm display name. */
+  farmName: string;
+  /** Overall risk label for the farm. */
+  riskLabel: string;
+  /** Deforestation within boundary (%). */
+  deforestationPercent: number | null;
+  /** Remaining forest cover (%). */
+  forestCoverPercent: number | null;
+  /** Protected-area overlap (%). */
+  protectedAreaOverlapPercent: number | null;
+  /** ISO timestamp of latest assessment. */
+  lastAssessedAt?: string;
+}
+
+export interface SupplyChainReportDeforestationInterface {
+  /** Aggregated chain risk label. */
+  overallRiskLabel: string;
+  /** Per-farm latest assessment metrics. */
+  farms: SupplyChainReportDeforestationFarmInterface[];
+}
+
 export interface SupplyChainReportInterface {
   /** Supply chain display name. */
   name: string;
@@ -43,6 +65,8 @@ export interface SupplyChainReportInterface {
   allocations: SupplyChainReportAllocationInterface[];
   /** Lifecycle events in chronological order. */
   events: SupplyChainReportEventInterface[];
+  /** Deforestation risk summary for linked farms. */
+  deforestation: SupplyChainReportDeforestationInterface;
 }
 
 export type GetSupplyChainReportOutput = SupplyChainReportInterface;

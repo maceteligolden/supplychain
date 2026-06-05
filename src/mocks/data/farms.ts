@@ -10,7 +10,7 @@ const SEED_FARMS: FarmInterface[] = [
     id: "farm_ashanti_cocoa_001",
     name: "Ashanti Cocoa Farm",
     code: "ASHANTI_COCOA_FARM",
-    status: "DRAFT",
+    status: "ASSESSED",
     owner: {
       firstName: "Kwame",
       lastName: "Asante",
@@ -26,6 +26,7 @@ const SEED_FARMS: FarmInterface[] = [
       longitude: -1.6244,
     },
     annualProductionEstimateKg: 18000,
+    areaHectares: 4.91,
     declarationAccepted: true,
     createdAt: "2025-01-12T08:00:00.000Z",
     updatedAt: "2025-01-12T08:00:00.000Z",

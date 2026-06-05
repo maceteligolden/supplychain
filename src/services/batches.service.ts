@@ -3,6 +3,7 @@ import { getAuthHeaders } from "@/services/auth-headers";
 import { fetchJson } from "@/services/api-client";
 import type {
   CreateBatchInput,
+  CreateBatchOutput,
   DeleteBatchOutput,
   GetBatchOutput,
   GetBatchesOutput,
@@ -34,8 +35,8 @@ export async function getBatchById(id: string): Promise<GetBatchOutput> {
 }
 
 /** Creates a new batch via the mock API. */
-export async function createBatch(input: CreateBatchInput): Promise<GetBatchOutput> {
-  return fetchJson<GetBatchOutput>({
+export async function createBatch(input: CreateBatchInput): Promise<CreateBatchOutput> {
+  return fetchJson<CreateBatchOutput>({
     url: "/api/batches",
     options: {
       method: "POST",

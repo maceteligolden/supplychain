@@ -91,7 +91,7 @@ The deployed environment includes **sample data** so you can explore without cre
 | Type          | Examples                                                                   |
 | ------------- | -------------------------------------------------------------------------- |
 | Commodities   | Cocoa, Gum Arabic                                                          |
-| Farms         | Ashanti Cocoa Farm (Ghana), Kordofan Gum Farm (Sudan)                      |
+| Farms         | Ashanti Cocoa Farm (Ghana, mapped), Kordofan Gum Farm (Sudan)              |
 | Supply chains | Ghana Cocoa Export Chain, Sudan Gum Arabic Export Chain                    |
 | Actors        | Kumasi Collection Centre, Accra Cocoa Processing Ltd, Tema Export Terminal |
 
@@ -124,7 +124,42 @@ Ghana Cocoa Export Chain already has **Harvest** and **Collection** events linke
 
 When **editing** a farm, step 4 includes a **status** dropdown (Super Admin can advance the workflow manually in this POC).
 
-To open a farm’s detail page, click the farm **name** or choose **View farm** from the row menu. The detail page shows owner, status, commodities, and compliance flags.
+To open a farm’s detail page, click the farm **name** or choose **View farm** from the row menu. The detail page has **Overview**, **Deforestation**, and **Operations** tabs.
+
+---
+
+### Step 2b — Farm boundary (deforestation prep)
+
+**Go to:** Farm detail → **Deforestation** tab → **Farm boundary** section (`/farms/[farmId]`)
+
+**Demo:** **Ashanti Cocoa Farm** → **Deforestation** tab already has a seeded boundary, three assessments, and a land-cover timeline chart.
+
+To map a new farm (e.g. **Kordofan Gum Farm**):
+
+1. Open the farm detail page.
+2. Click **Draw boundary**.
+3. Click the map to place at least **3 corners** around the farm area.
+4. Click **Close shape**, then **Save boundary**.
+5. Confirm the farm **status** changes to **Mapped** and **Area** updates in the profile section.
+
+To replace or remove: use **Redraw** or **Remove boundary** on a mapped farm.
+
+---
+
+### Step 2c — Deforestation assessment
+
+**Go to:** Farm detail → **Deforestation** tab (`/farms/[farmId]`)
+
+**Demo:** **Ashanti Cocoa Farm** shows three seeded assessments, a land-cover timeline chart, and a selectable history table.
+
+To run an assessment on a mapped farm:
+
+1. Open the **Deforestation** tab and ensure the farm has a saved boundary (see Step 2b).
+2. Click **Run assessment**.
+3. Review the **Latest result** card — risk badge, deforestation %, forest cover, protected overlap.
+4. Inspect the **Land-cover timeline** chart (baseline years plus assessment snapshots).
+5. Use the **Assessment history** table — click a row to highlight that run on the chart.
+6. Confirm farm **status** changes to **Assessed** (when previously Draft or Mapped).
 
 ---
 
@@ -266,6 +301,21 @@ On the supply chain detail page:
 2. Choose **Download PDF** or **Download CSV spreadsheet**.
 
 The report includes chain metadata, summary stats, allocations, and lifecycle events. The file downloads to your computer.
+
+---
+
+### 4f. Supply chain deforestation risk
+
+**Go to:** Supply chain detail (`/supply-chains/[supplyChainId]`) or **Dashboard** (`/`)
+
+**Demo:**
+
+- **Ghana Cocoa Export Chain** — **Deforestation risk** card shows **Medium risk** from **Ashanti Cocoa Farm** (seeded allocation + assessment).
+- **Sudan Gum Arabic Export Chain** — **Unassessed** (Kordofan linked but no assessment yet).
+
+On supply chain detail, the **Deforestation risk** card sits below the KPI stats. It lists each linked farm, risk badge, allocated quantity, and last assessed date. Click a farm name to open farm detail.
+
+On the **Dashboard**, check the **At-risk chains** KPI and the **Deforestation risk** column in **Ongoing supply chains**.
 
 ---
 

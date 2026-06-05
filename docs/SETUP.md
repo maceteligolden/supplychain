@@ -120,13 +120,88 @@ Route: `/farms` (sidebar link when authenticated).
 | Location                   | Country, region, city, optional latitude/longitude                                                            |
 | Annual production estimate | Optional kg estimate                                                                                          |
 | Declaration accepted       | Boolean compliance flag                                                                                       |
-| Area (hectares)            | Optional — populated by boundary module in a later phase                                                      |
+| Area (hectares)            | Computed from farm boundary polygon on save; shown on farm detail                                             |
 
 Pre-seeded mock farms: **Ashanti Cocoa Farm** (Cocoa, Ghana) and **Kordofan Gum Farm** (Gum Arabic, Sudan).
 
 List controls: search, commodity filter, **status filter**, table/grid layout switcher, client-side pagination, toast feedback.
 
 API routes: `GET/POST /api/farms`, `GET/PATCH/DELETE /api/farms/[id]`.
+
+## Farm boundary (FR-11)
+
+On farm detail (`/farms/[farmId]`) — **Farm boundary** section between profile and batch overview.
+
+| Action        | Description                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| Draw boundary | Click map corners (≥3 points) → **Close shape** → **Save boundary** |
+| Redraw        | Replace existing polygon with a new draw session                    |
+| Remove        | Deletes boundary; reverts **MAPPED** → **DRAFT** and clears area    |
+
+- Map: Leaflet + OpenStreetMap tiles (no API key)
+- Area computed server-side via Turf.js (geodesic hectares)
+- First boundary save sets farm status to **MAPPED** when currently **DRAFT**
+
+API routes: `GET/PUT/DELETE /api/farms/[id]/boundary`
+
+Pre-seeded: **Ashanti Cocoa Farm** has a demo polygon (~4.91 ha) and **ASSESSED** status with a seeded assessment.
+
+## Farm assessment (FR-12–15)
+
+On farm detail (`/farms/[farmId]`) — **Deforestation assessment** section between boundary and batch overview.
+
+| Action         | Description                                                                        |
+| -------------- | ---------------------------------------------------------------------------------- |
+| Run assessment | Mock satellite analysis; requires a saved boundary polygon                         |
+| Latest result  | Risk badge (Low / Medium / High), deforestation %, forest cover, protected overlap |
+| History        | Previous assessment runs listed below the latest result                            |
+
+- Assessment engine is deterministic mock data (no real satellite API)
+- Successful run advances farm status to **ASSESSED** when currently **DRAFT**, **MAPPED**, or **READY_FOR_ASSESSMENT**
+
+API routes: `GET/POST /api/farms/[id]/assessments`, `GET /api/farms/[id]/assessments/[assessmentId]`
+
+Pre-seeded: **Ashanti Cocoa Farm** has three demo assessments and **Assessed** status.
+
+## Farm detail tabs
+
+Farm detail (`/farms/[farmId]`) uses three top-level tabs:
+
+| Tab           | Contents                                                                          |
+| ------------- | --------------------------------------------------------------------------------- |
+| Overview      | Farm profile, batch overview stats                                                |
+| Deforestation | Boundary map, run assessment, land-cover timeline chart, assessment history table |
+| Operations    | Batch management and allocation management (nested tabs)                          |
+
+## Land-cover timeline (FR-17)
+
+On the **Deforestation** tab — chart of forest cover and deforestation over time.
+
+| Feature       | Description                                                     |
+| ------------- | --------------------------------------------------------------- |
+| Baseline      | Mock satellite snapshots for 2020–2024 (deterministic per farm) |
+| Assessments   | Each assessment run adds a snapshot point on the chart          |
+| History table | Full metrics per run; click a row to highlight it on the chart  |
+
+API route: `GET /api/farms/[id]/land-cover-timeline`
+
+## Supply chain deforestation risk (FR-18)
+
+Chain-level risk is derived from the **latest assessment** on each farm linked via batch allocations.
+
+| Overall risk        | Rule                                           |
+| ------------------- | ---------------------------------------------- |
+| No farms linked     | Shown when the chain has no allocations        |
+| Unassessed          | Linked farms exist but none have an assessment |
+| Low / Medium / High | Highest risk among assessed linked farms       |
+
+**Supply chain detail** (`/supply-chains/[supplyChainId]`) — **Deforestation risk** card below KPI stats: overall badge, per-farm table with allocated quantity and links to farm detail.
+
+**Dashboard** — **At-risk chains** KPI (medium or high); **Deforestation risk** column on the ongoing supply chains table.
+
+API route: `GET /api/supply-chains/[id]/risk-summary`
+
+Pre-seeded allocations: **Ghana Cocoa Export Chain** → Ashanti (medium risk); **Sudan Gum Arabic Export Chain** → Kordofan (unassessed).
 
 ## Supply chain management (FR-6)
 

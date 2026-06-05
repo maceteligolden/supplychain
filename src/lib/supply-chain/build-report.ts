@@ -1,11 +1,15 @@
+import { ASSESSMENT_RISK_LABELS } from "@/config/farm-assessment-risk";
 import { SUPPLY_CHAIN_EVENT_TYPE_LABELS } from "@/config/supply-chain-event-types";
+import { SUPPLY_CHAIN_OVERALL_RISK_LABELS } from "@/config/supply-chain-risk";
 import { SUPPLY_CHAIN_STATUS_LABELS } from "@/config/supply-chain-status";
 import { formatActorAddress } from "@/lib/actor/format-address";
+import { buildSupplyChainRiskSummary } from "@/lib/supply-chain/build-risk-summary";
 import { getSupplyChainStats } from "@/lib/supply-chain/supply-chain-stats";
 import type { ActorInterface } from "@/types/actor.interface";
 import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
 import type { BatchInterface } from "@/types/batch.interface";
 import type { CommodityInterface } from "@/types/commodity.interface";
+import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
 import type { FarmInterface } from "@/types/farm.interface";
 import type { SupplyChainReportInterface } from "@/types/supply-chain-report.interface";
 import type { SupplyChainEventInterface } from "@/types/supply-chain-event.interface";
@@ -19,6 +23,7 @@ export type BuildSupplyChainReportInput = {
   farms: FarmInterface[];
   events: SupplyChainEventInterface[];
   actors: ActorInterface[];
+  latestAssessmentByFarmId: Map<string, FarmAssessmentInterface | undefined>;
   generatedAt?: string;
 };
 
@@ -35,6 +40,14 @@ export function buildSupplyChainReport(
     batches: input.batches,
     farms: input.farms,
     events: input.events,
+  });
+
+  const riskSummary = buildSupplyChainRiskSummary({
+    supplyChainId: input.supplyChain.id,
+    allocations: input.allocations,
+    batches: input.batches,
+    farms: input.farms,
+    latestAssessmentByFarmId: input.latestAssessmentByFarmId,
   });
 
   const allocations = input.allocations.map((allocation) => {
@@ -73,5 +86,19 @@ export function buildSupplyChainReport(
     stats,
     allocations,
     events,
+    deforestation: {
+      overallRiskLabel: SUPPLY_CHAIN_OVERALL_RISK_LABELS[riskSummary.overallRiskLevel],
+      farms: riskSummary.farmRisks.map((entry) => ({
+        farmName: entry.farmName,
+        riskLabel: entry.riskLevel
+          ? ASSESSMENT_RISK_LABELS[entry.riskLevel]
+          : "Not assessed",
+        deforestationPercent: entry.analysis?.deforestationPercent ?? null,
+        forestCoverPercent: entry.analysis?.forestCoverPercent ?? null,
+        protectedAreaOverlapPercent:
+          entry.analysis?.protectedAreaOverlapPercent ?? null,
+        lastAssessedAt: entry.latestAssessedAt,
+      })),
+    },
   };
 }

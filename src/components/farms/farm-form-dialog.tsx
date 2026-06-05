@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { LatLngExpression } from "leaflet";
 
+import { FarmBoundaryDrawField } from "@/components/farms/farm-boundary-draw-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,11 +34,38 @@ import { generateFarmCodeFromName } from "@/lib/farm/code-generator";
 import { cn } from "@/lib/utils";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
+import { upsertFarmBoundary } from "@/services/farm-boundaries.service";
 import { createFarm, updateFarm } from "@/services/farms.service";
 import type { CommodityInterface } from "@/types/commodity.interface";
+import type { GeoCoordinateInterface } from "@/types/farm-boundary.interface";
 import type { FarmInterface } from "@/types/farm.interface";
 
-const WIZARD_STEPS = ["Farm", "Owner", "Location", "Compliance"] as const;
+const CREATE_WIZARD_STEPS = [
+  "Farm",
+  "Owner",
+  "Location",
+  "Boundary",
+  "Compliance",
+] as const;
+const EDIT_WIZARD_STEPS = ["Farm", "Owner", "Location", "Compliance"] as const;
+
+type WizardStepKind = "farm" | "owner" | "location" | "boundary" | "compliance";
+
+function getStepKind(step: number, isEdit: boolean): WizardStepKind {
+  if (step === 0) {
+    return "farm";
+  }
+  if (step === 1) {
+    return "owner";
+  }
+  if (step === 2) {
+    return "location";
+  }
+  if (!isEdit && step === 3) {
+    return "boundary";
+  }
+  return "compliance";
+}
 
 export interface FarmFormDialogProps {
   /** Whether the dialog is open. */
@@ -52,8 +81,7 @@ export interface FarmFormDialogProps {
 /**
  * FarmFormDialog
  *
- * Four-step wizard for creating or editing farms with optional steps
- * skippable via "Skip for now".
+ * Multi-step wizard for creating or editing farms with optional skippable steps.
  */
 export function FarmFormDialog({
   open,
@@ -63,6 +91,7 @@ export function FarmFormDialog({
 }: FarmFormDialogProps): React.JSX.Element {
   const router = useRouter();
   const isEdit = Boolean(farm);
+  const wizardSteps = isEdit ? EDIT_WIZARD_STEPS : CREATE_WIZARD_STEPS;
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState(farm?.name ?? "");
@@ -81,6 +110,10 @@ export function FarmFormDialog({
   const [longitude, setLongitude] = useState(
     farm?.location.longitude !== undefined ? String(farm.location.longitude) : "",
   );
+  const [boundaryCoordinates, setBoundaryCoordinates] = useState<
+    GeoCoordinateInterface[]
+  >([]);
+  const [boundaryShapeClosed, setBoundaryShapeClosed] = useState(false);
   const [annualProduction, setAnnualProduction] = useState(
     farm?.annualProductionEstimateKg !== undefined
       ? String(farm.annualProductionEstimateKg)
@@ -92,6 +125,15 @@ export function FarmFormDialog({
   const [status, setStatus] = useState<FarmStatus>(farm?.status ?? "DRAFT");
   const [codeManuallyEdited, setCodeManuallyEdited] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const boundaryMapCenter = useMemo((): LatLngExpression | undefined => {
+    const parsedLatitude = latitude.trim() ? Number(latitude) : undefined;
+    const parsedLongitude = longitude.trim() ? Number(longitude) : undefined;
+    if (parsedLatitude !== undefined && parsedLongitude !== undefined) {
+      return [parsedLatitude, parsedLongitude];
+    }
+    return undefined;
+  }, [latitude, longitude]);
 
   function resetWizardState(): void {
     setStep(0);
@@ -111,6 +153,8 @@ export function FarmFormDialog({
     setLongitude(
       farm?.location.longitude !== undefined ? String(farm.location.longitude) : "",
     );
+    setBoundaryCoordinates([]);
+    setBoundaryShapeClosed(false);
     setAnnualProduction(
       farm?.annualProductionEstimateKg !== undefined
         ? String(farm.annualProductionEstimateKg)
@@ -144,12 +188,13 @@ export function FarmFormDialog({
   }
 
   function canProceedFromStep(currentStep: number): boolean {
-    if (currentStep === 0) {
+    const kind = getStepKind(currentStep, isEdit);
+    if (kind === "farm") {
       return (
         name.trim().length >= 2 && code.trim().length >= 2 && commodityIds.length > 0
       );
     }
-    if (currentStep === 2) {
+    if (kind === "location") {
       return (
         country.trim().length >= 1 &&
         region.trim().length >= 1 &&
@@ -164,7 +209,8 @@ export function FarmFormDialog({
       return;
     }
 
-    if (currentStep === 1) {
+    const kind = getStepKind(currentStep, isEdit);
+    if (kind === "owner") {
       const empty = createEmptyFarmOwner();
       setOwnerFirstName(empty.firstName);
       setOwnerLastName(empty.lastName);
@@ -172,7 +218,7 @@ export function FarmFormDialog({
       setOwnerEmail(empty.email);
     }
 
-    if (currentStep === 2) {
+    if (kind === "location") {
       const empty = createEmptyFarmLocation();
       setCountry(empty.country);
       setRegion(empty.region);
@@ -181,7 +227,12 @@ export function FarmFormDialog({
       setLongitude("");
     }
 
-    if (currentStep === 3) {
+    if (kind === "boundary") {
+      setBoundaryCoordinates([]);
+      setBoundaryShapeClosed(false);
+    }
+
+    if (kind === "compliance") {
       setAnnualProduction("");
       setDeclarationAccepted(false);
     }
@@ -236,10 +287,15 @@ export function FarmFormDialog({
         await updateFarm(farm.id, payload);
         showSuccessToast(`"${name}" updated successfully.`);
       } else {
-        await createFarm({
+        const created = await createFarm({
           ...payload,
           status: "DRAFT",
         });
+
+        if (boundaryShapeClosed && boundaryCoordinates.length >= 3) {
+          await upsertFarmBoundary(created.id, { coordinates: boundaryCoordinates });
+        }
+
         showSuccessToast(`"${name}" created successfully.`);
       }
       onOpenChange(false);
@@ -255,7 +311,13 @@ export function FarmFormDialog({
     }
   }
 
-  const isOptionalStep = step === 1 || step === 2 || step === 3;
+  const stepKind = getStepKind(step, isEdit);
+  const isOptionalStep =
+    stepKind === "owner" ||
+    stepKind === "location" ||
+    stepKind === "boundary" ||
+    stepKind === "compliance";
+  const lastStepIndex = wizardSteps.length - 1;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -263,12 +325,12 @@ export function FarmFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit farm" : "Add farm"}</DialogTitle>
           <DialogDescription>
-            Step {step + 1} of {WIZARD_STEPS.length}: {WIZARD_STEPS[step]}
+            Step {step + 1} of {wizardSteps.length}: {wizardSteps[step]}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2">
-          {WIZARD_STEPS.map((label, index) => (
+          {wizardSteps.map((label, index) => (
             <div
               key={label}
               className={cn(
@@ -280,7 +342,7 @@ export function FarmFormDialog({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto py-2">
-          {step === 0 ? (
+          {stepKind === "farm" ? (
             <div className="gap-section flex flex-col">
               <div className="gap-card flex flex-col">
                 <Label htmlFor="farm-name">Name</Label>
@@ -335,7 +397,7 @@ export function FarmFormDialog({
             </div>
           ) : null}
 
-          {step === 1 ? (
+          {stepKind === "owner" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
                 Optional — add the farm owner contact details or skip for now.
@@ -382,7 +444,7 @@ export function FarmFormDialog({
             </div>
           ) : null}
 
-          {step === 2 ? (
+          {stepKind === "location" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
                 Optional — enter the farm location or skip for now.
@@ -443,7 +505,24 @@ export function FarmFormDialog({
             </div>
           ) : null}
 
-          {step === 3 ? (
+          {stepKind === "boundary" ? (
+            <div className="gap-section flex flex-col">
+              <p className="text-muted-foreground text-sm">
+                Optional — draw the farm boundary on the map or skip and map it later on
+                the farm detail page.
+              </p>
+              <FarmBoundaryDrawField
+                center={boundaryMapCenter}
+                coordinates={boundaryCoordinates}
+                onCoordinatesChange={setBoundaryCoordinates}
+                isShapeClosed={boundaryShapeClosed}
+                onShapeClosedChange={setBoundaryShapeClosed}
+                disabled={isSubmitting}
+              />
+            </div>
+          ) : null}
+
+          {stepKind === "compliance" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
                 Optional compliance details — skip if not ready yet.
@@ -518,7 +597,7 @@ export function FarmFormDialog({
             >
               Cancel
             </Button>
-            {isOptionalStep && step < WIZARD_STEPS.length - 1 ? (
+            {isOptionalStep && step < lastStepIndex ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -528,7 +607,7 @@ export function FarmFormDialog({
                 Skip for now
               </Button>
             ) : null}
-            {step < WIZARD_STEPS.length - 1 ? (
+            {step < lastStepIndex ? (
               <Button type="button" disabled={isSubmitting} onClick={handleNext}>
                 Next
               </Button>

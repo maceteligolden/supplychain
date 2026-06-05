@@ -39,6 +39,27 @@ export function downloadSupplyChainReportCsv(report: SupplyChainReportInterface)
     csvRow(["Total quantity", report.stats.totalAllocatedQuantity]),
     csvRow(["Events recorded", report.stats.eventsRecordedCount]),
     "",
+    csvRow(["Deforestation risk"]),
+    csvRow(["Overall chain risk", report.deforestation.overallRiskLabel]),
+    csvRow([
+      "Farm",
+      "Risk",
+      "Deforestation %",
+      "Forest cover %",
+      "Protected overlap %",
+      "Last assessed",
+    ]),
+    ...report.deforestation.farms.map((item) =>
+      csvRow([
+        item.farmName,
+        item.riskLabel,
+        item.deforestationPercent ?? "",
+        item.forestCoverPercent ?? "",
+        item.protectedAreaOverlapPercent ?? "",
+        item.lastAssessedAt ?? "",
+      ]),
+    ),
+    "",
     csvRow(["Allocations"]),
     csvRow(["Farm", "Batch", "Quantity", "Unit"]),
     ...report.allocations.map((item) =>

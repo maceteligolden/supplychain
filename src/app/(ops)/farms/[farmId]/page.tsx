@@ -4,6 +4,9 @@ import { FarmDetailView } from "@/components/farms/farm-detail-view";
 import { getBatchAllocationsByFarmId } from "@/services/batch-allocations.service";
 import { getBatchesByFarmId } from "@/services/batches.service";
 import { getCommodities } from "@/services/commodities.service";
+import { getFarmAssessments } from "@/services/farm-assessments.service";
+import { getFarmLandCoverTimeline } from "@/services/farm-land-cover.service";
+import { getFarmBoundaryByFarmId } from "@/services/farm-boundaries.service";
 import { getFarmById } from "@/services/farms.service";
 import { getSupplyChains } from "@/services/supply-chains.service";
 
@@ -19,14 +22,25 @@ export default async function FarmDetailPage({
 }: FarmDetailPageProps): Promise<React.JSX.Element> {
   const { farmId } = await params;
 
-  const [farm, { commodities }, { batches }, { allocations }, { supplyChains }] =
-    await Promise.all([
-      getFarmById(farmId),
-      getCommodities(),
-      getBatchesByFarmId(farmId),
-      getBatchAllocationsByFarmId(farmId),
-      getSupplyChains(),
-    ]);
+  const [
+    farm,
+    { boundary },
+    { assessments },
+    { points: landCoverTimeline },
+    { commodities },
+    { batches },
+    { allocations },
+    { supplyChains },
+  ] = await Promise.all([
+    getFarmById(farmId),
+    getFarmBoundaryByFarmId(farmId),
+    getFarmAssessments(farmId),
+    getFarmLandCoverTimeline(farmId),
+    getCommodities(),
+    getBatchesByFarmId(farmId),
+    getBatchAllocationsByFarmId(farmId),
+    getSupplyChains(),
+  ]);
 
   if (!farm) {
     notFound();
@@ -43,6 +57,9 @@ export default async function FarmDetailPage({
       batches={batches}
       allocations={allocations}
       supplyChains={supplyChains}
+      boundary={boundary}
+      assessments={assessments}
+      landCoverTimeline={landCoverTimeline}
     />
   );
 }
