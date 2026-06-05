@@ -246,7 +246,19 @@ HARVEST → COLLECTION → PROCESSING → WAREHOUSING → EXPORT → IN_TRANSIT 
 
 ---
 
-### 4d. Export a traceability report
+### 4d. Chain-of-custody graph
+
+On the supply chain detail page, scroll to **Chain of custody** (above the allocations table):
+
+1. Open **Ghana Cocoa Export Chain** from **Supply Chains**.
+2. The graph shows the supply chain hub connected to all seven lifecycle steps.
+3. **Harvest** and **Collection** appear as completed (seeded demo events); remaining steps show as upcoming or next.
+4. If batches are allocated, farm and batch nodes appear on the left with quantity labels on the edges.
+5. Use pan/zoom controls on the map; click a **Farm** node to open farm detail.
+
+---
+
+### 4e. Export a traceability report
 
 On the supply chain detail page:
 
@@ -313,7 +325,7 @@ Useful when auditing which journeys an organisation has participated in.
 - **Single role:** Only Super Admin is available in this POC.
 - **Toasts:** Green success and red error messages appear after create, update, and delete actions—use them to confirm each step during testing.
 - **Inactive chains and actors:** **INACTIVE** supply chains do not accept new allocations; **INACTIVE** actors do not appear in event dropdowns.
-- **Not built yet:** **Reports** and **Traceability** sidebar entries are placeholders for a future phase—use **Export report** on a supply chain detail page for reporting during UAT.
+- **Not built yet:** **Reports** and **Traceability** sidebar entries are placeholders for a future phase—use the **Chain of custody** graph and **Export report** on a supply chain detail page during UAT.
 - **Exports:** PDF and CSV downloads save to your computer via the browser; no extra software is required.
 
 ---

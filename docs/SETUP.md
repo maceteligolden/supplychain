@@ -108,7 +108,7 @@ Route: `/farms` (sidebar link when authenticated).
 1. **Farm** — name, code, one or more commodities (required)
 2. **Owner** — first name, last name, phone, email (optional — skip for now)
 3. **Location** — country, region, city, optional GPS (optional — skip for now)
-4. **Compliance** — annual production estimate, ownership verified, declaration accepted; **status** on edit only
+4. **Compliance** — annual production estimate, declaration accepted; **status** on edit only
 
 | Field                      | Description                                                                                                   |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -119,7 +119,6 @@ Route: `/farms` (sidebar link when authenticated).
 | Owner                      | firstName, lastName, phone, email — empty when skipped                                                        |
 | Location                   | Country, region, city, optional latitude/longitude                                                            |
 | Annual production estimate | Optional kg estimate                                                                                          |
-| Ownership verified         | Boolean compliance flag                                                                                       |
 | Declaration accepted       | Boolean compliance flag                                                                                       |
 | Area (hectares)            | Optional — populated by boundary module in a later phase                                                      |
 
@@ -160,6 +159,8 @@ API routes:
 Entry: **View chain** in row actions, click chain name, or open wizard via **Add supply chain** / **Edit**.
 
 **Export report** (supply chain detail): **Export report** menu → Download PDF or Download CSV spreadsheet. Report includes chain metadata, stats, allocations, and lifecycle events.
+
+**Chain of custody graph** (supply chain detail): interactive map from source farms and batches through the supply chain hub to each lifecycle event step. Event nodes use the same completed / skipped / upcoming / next states as the timeline. Pan and zoom with the on-map controls; click farm nodes to open farm detail, event subtitles link to actors.
 
 ## Event management (FR-8)
 

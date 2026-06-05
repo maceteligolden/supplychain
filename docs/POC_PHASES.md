@@ -101,6 +101,14 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - Supply chain wizard: farms filtered by `commodityIds.includes(commodityId)`
 - Status enum: DRAFT → MAPPED → READY_FOR_ASSESSMENT → UNDER_REVIEW → ASSESSED → APPROVED → REJECTED (manual edit in POC)
 
+### Phase 10 — FR-9 Traceability Visualization
+
+- **Chain-of-custody graph** on `/supply-chains/[supplyChainId]` — interactive left-to-right flow
+- Built client-side via `buildCustodyGraph()` from allocations, batches, farms, events, and actors (no new API)
+- Node types: farm, batch, supply chain hub, lifecycle event (all 7 steps with completed/skipped/upcoming/next styling)
+- React Flow (`@xyflow/react`) with pan/zoom controls; farm and actor nodes link to detail pages
+- Legend for event step states; empty-allocation message when no batches assigned
+
 ## Deforestation module roadmap (upcoming)
 
 | Phase | Requirement    | Depends on                | Delivers                                                          |
@@ -109,12 +117,6 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 | 14    | FR-12–15       | Farm + Boundary           | FarmAssessment, mock deforestation analysis, risk LOW/MEDIUM/HIGH |
 | 15    | FR-16–17       | Assessments               | Farm assessment tab, history, land-cover timeline                 |
 | 16    | FR-18          | Farm risk + Supply chains | Chain-level risk summary on supply chain detail/dashboard         |
-
-## Upcoming (in order)
-
-| Phase | Requirement                     | Key screens            |
-| ----- | ------------------------------- | ---------------------- |
-| 10    | FR-9 Traceability Visualization | Chain-of-custody graph |
 
 ## Mock credentials (Phase 1)
 

@@ -45,8 +45,6 @@ export interface FarmInterface {
   annualProductionEstimateKg?: number;
   /** Farm area in hectares — populated from boundary when mapped. */
   areaHectares?: number;
-  /** Whether farm ownership has been verified. */
-  ownershipVerified: boolean;
   /** Whether the farm declaration was accepted. */
   declarationAccepted: boolean;
   /** ISO timestamp when the farm was created. */
@@ -64,7 +62,6 @@ export type CreateFarmInput = {
   location: FarmLocationInterface;
   annualProductionEstimateKg?: number;
   areaHectares?: number;
-  ownershipVerified: boolean;
   declarationAccepted: boolean;
 };
 
@@ -77,7 +74,6 @@ export type UpdateFarmInput = {
   location?: Partial<FarmLocationInterface>;
   annualProductionEstimateKg?: number;
   areaHectares?: number;
-  ownershipVerified?: boolean;
   declarationAccepted?: boolean;
 };
 

@@ -53,7 +53,6 @@ export const createFarmSchema = Joi.object({
   }),
   annualProductionEstimateKg: Joi.number().positive().optional(),
   areaHectares: Joi.number().positive().optional(),
-  ownershipVerified: Joi.boolean().default(false),
   declarationAccepted: Joi.boolean().default(false),
 });
 
@@ -78,7 +77,6 @@ export const updateFarmSchema = Joi.object({
   location: locationSchema.optional(),
   annualProductionEstimateKg: Joi.number().positive().allow(null).optional(),
   areaHectares: Joi.number().positive().allow(null).optional(),
-  ownershipVerified: Joi.boolean().optional(),
   declarationAccepted: Joi.boolean().optional(),
 }).min(1);
 
@@ -102,7 +100,6 @@ export type CreateFarmSchemaInput = {
   };
   annualProductionEstimateKg?: number;
   areaHectares?: number;
-  ownershipVerified: boolean;
   declarationAccepted: boolean;
 };
 
@@ -126,6 +123,5 @@ export type UpdateFarmSchemaInput = {
   };
   annualProductionEstimateKg?: number | null;
   areaHectares?: number | null;
-  ownershipVerified?: boolean;
   declarationAccepted?: boolean;
 };

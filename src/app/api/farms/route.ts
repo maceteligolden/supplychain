@@ -66,7 +66,6 @@ export async function POST(request: Request): Promise<Response> {
           location: input.location,
           annualProductionEstimateKg: input.annualProductionEstimateKg,
           areaHectares: input.areaHectares,
-          ownershipVerified: input.ownershipVerified,
           declarationAccepted: input.declarationAccepted,
         });
 

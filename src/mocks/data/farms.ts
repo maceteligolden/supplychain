@@ -26,7 +26,6 @@ const SEED_FARMS: FarmInterface[] = [
       longitude: -1.6244,
     },
     annualProductionEstimateKg: 18000,
-    ownershipVerified: true,
     declarationAccepted: true,
     createdAt: "2025-01-12T08:00:00.000Z",
     updatedAt: "2025-01-12T08:00:00.000Z",
@@ -51,7 +50,6 @@ const SEED_FARMS: FarmInterface[] = [
       longitude: 30.2167,
     },
     annualProductionEstimateKg: 12000,
-    ownershipVerified: true,
     declarationAccepted: true,
     createdAt: "2025-01-12T08:00:00.000Z",
     updatedAt: "2025-01-12T08:00:00.000Z",
@@ -112,7 +110,6 @@ export function createFarm(input: CreateFarmInput): FarmInterface {
     },
     annualProductionEstimateKg: input.annualProductionEstimateKg,
     areaHectares: input.areaHectares,
-    ownershipVerified: input.ownershipVerified,
     declarationAccepted: input.declarationAccepted,
     createdAt: now,
     updatedAt: now,
@@ -172,7 +169,6 @@ export function updateFarm(
       input.areaHectares === null
         ? undefined
         : (input.areaHectares ?? existing.areaHectares),
-    ownershipVerified: input.ownershipVerified ?? existing.ownershipVerified,
     declarationAccepted: input.declarationAccepted ?? existing.declarationAccepted,
     updatedAt: new Date().toISOString(),
   };

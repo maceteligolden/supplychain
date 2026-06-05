@@ -86,9 +86,6 @@ export function FarmFormDialog({
       ? String(farm.annualProductionEstimateKg)
       : "",
   );
-  const [ownershipVerified, setOwnershipVerified] = useState(
-    farm?.ownershipVerified ?? false,
-  );
   const [declarationAccepted, setDeclarationAccepted] = useState(
     farm?.declarationAccepted ?? false,
   );
@@ -119,7 +116,6 @@ export function FarmFormDialog({
         ? String(farm.annualProductionEstimateKg)
         : "",
     );
-    setOwnershipVerified(farm?.ownershipVerified ?? false);
     setDeclarationAccepted(farm?.declarationAccepted ?? false);
     setStatus(farm?.status ?? "DRAFT");
     setCodeManuallyEdited(isEdit);
@@ -187,7 +183,6 @@ export function FarmFormDialog({
 
     if (currentStep === 3) {
       setAnnualProduction("");
-      setOwnershipVerified(false);
       setDeclarationAccepted(false);
     }
   }
@@ -232,7 +227,6 @@ export function FarmFormDialog({
         longitude: parsedLongitude,
       },
       annualProductionEstimateKg: parsedProduction,
-      ownershipVerified,
       declarationAccepted,
       ...(isEdit ? { status } : {}),
     };
@@ -493,15 +487,6 @@ export function FarmFormDialog({
                   disabled={isSubmitting}
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={ownershipVerified}
-                  onChange={(event) => setOwnershipVerified(event.target.checked)}
-                  disabled={isSubmitting}
-                />
-                Ownership verified
-              </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"

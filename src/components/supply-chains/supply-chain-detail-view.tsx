@@ -1,11 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon, PencilIcon } from "lucide-react";
 
 import { EventTimeline } from "@/components/supply-chain-events/event-timeline";
 import { SupplyChainExportMenu } from "@/components/supply-chains/supply-chain-export-menu";
 import { StatCard } from "@/components/layout/stat-card";
+import { CustodyGraphLoader } from "@/components/traceability/custody-graph-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { PAGE_ROUTES } from "@/config/page-routes";
 import { SUPPLY_CHAIN_STATUS_LABELS } from "@/config/supply-chain-status";
+import { buildCustodyGraph } from "@/lib/supply-chain/build-custody-graph";
 import { getSupplyChainStats } from "@/lib/supply-chain/supply-chain-stats";
 import type { ActorInterface } from "@/types/actor.interface";
 import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
@@ -63,6 +66,20 @@ export function SupplyChainDetailView({
   onEdit,
 }: SupplyChainDetailViewProps): React.JSX.Element {
   const stats = getSupplyChainStats({ allocations, batches, farms, events });
+
+  const custodyGraph = useMemo(
+    () =>
+      buildCustodyGraph({
+        supplyChain,
+        commodity,
+        allocations,
+        batches,
+        farms,
+        events,
+        actors,
+      }),
+    [supplyChain, commodity, allocations, batches, farms, events, actors],
+  );
 
   const allocationRows = allocations.map((allocation) => {
     const batch = batches.find((item) => item.id === allocation.batchId);
@@ -129,6 +146,18 @@ export function SupplyChainDetailView({
           description="Lifecycle milestones logged"
         />
       </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="mb-4">
+            <h3 className="text-foreground text-lg font-semibold">Chain of custody</h3>
+            <p className="text-muted-foreground text-sm">
+              Visual map from farm harvest through each custody handoff.
+            </p>
+          </div>
+          <CustodyGraphLoader graph={custodyGraph} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="pt-6">
