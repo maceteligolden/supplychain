@@ -10,7 +10,14 @@ const SEED_FARMS: FarmInterface[] = [
     id: "farm_ashanti_cocoa_001",
     name: "Ashanti Cocoa Farm",
     code: "ASHANTI_COCOA_FARM",
-    commodityId: "commodity_cocoa_001",
+    status: "DRAFT",
+    owner: {
+      firstName: "Kwame",
+      lastName: "Asante",
+      phone: "+233241234567",
+      email: "kwame.asante@example.com",
+    },
+    commodityIds: ["commodity_cocoa_001"],
     location: {
       country: "Ghana",
       region: "Ashanti",
@@ -18,6 +25,9 @@ const SEED_FARMS: FarmInterface[] = [
       latitude: 6.6885,
       longitude: -1.6244,
     },
+    annualProductionEstimateKg: 18000,
+    ownershipVerified: true,
+    declarationAccepted: true,
     createdAt: "2025-01-12T08:00:00.000Z",
     updatedAt: "2025-01-12T08:00:00.000Z",
   },
@@ -25,7 +35,14 @@ const SEED_FARMS: FarmInterface[] = [
     id: "farm_kordofan_gum_001",
     name: "Kordofan Gum Farm",
     code: "KORDOFAN_GUM_FARM",
-    commodityId: "commodity_gum_arabic_001",
+    status: "DRAFT",
+    owner: {
+      firstName: "Fatima",
+      lastName: "Hassan",
+      phone: "+249912345678",
+      email: "fatima.hassan@example.com",
+    },
+    commodityIds: ["commodity_gum_arabic_001"],
     location: {
       country: "Sudan",
       region: "Kordofan",
@@ -33,6 +50,9 @@ const SEED_FARMS: FarmInterface[] = [
       latitude: 13.1842,
       longitude: 30.2167,
     },
+    annualProductionEstimateKg: 12000,
+    ownershipVerified: true,
+    declarationAccepted: true,
     createdAt: "2025-01-12T08:00:00.000Z",
     updatedAt: "2025-01-12T08:00:00.000Z",
   },
@@ -63,6 +83,10 @@ export function isCommodityLinked(commodityId: string): boolean {
   return Boolean(getCommodityById(commodityId));
 }
 
+export function areCommoditiesLinked(commodityIds: string[]): boolean {
+  return commodityIds.every((id) => isCommodityLinked(id));
+}
+
 export function createFarm(input: CreateFarmInput): FarmInterface {
   const now = new Date().toISOString();
   const code = input.code.toUpperCase();
@@ -71,7 +95,14 @@ export function createFarm(input: CreateFarmInput): FarmInterface {
     id: generateId(),
     name: input.name.trim(),
     code,
-    commodityId: input.commodityId,
+    status: input.status ?? "DRAFT",
+    owner: {
+      firstName: input.owner.firstName.trim(),
+      lastName: input.owner.lastName.trim(),
+      phone: input.owner.phone.trim(),
+      email: input.owner.email.trim(),
+    },
+    commodityIds: [...input.commodityIds],
     location: {
       country: input.location.country.trim(),
       region: input.location.region.trim(),
@@ -79,6 +110,10 @@ export function createFarm(input: CreateFarmInput): FarmInterface {
       latitude: input.location.latitude,
       longitude: input.location.longitude,
     },
+    annualProductionEstimateKg: input.annualProductionEstimateKg,
+    areaHectares: input.areaHectares,
+    ownershipVerified: input.ownershipVerified,
+    declarationAccepted: input.declarationAccepted,
     createdAt: now,
     updatedAt: now,
   };
@@ -102,6 +137,15 @@ export function updateFarm(
   }
 
   const code = input.code ? input.code.toUpperCase() : existing.code;
+  const owner = input.owner
+    ? {
+        firstName: input.owner.firstName?.trim() ?? existing.owner.firstName,
+        lastName: input.owner.lastName?.trim() ?? existing.owner.lastName,
+        phone: input.owner.phone?.trim() ?? existing.owner.phone,
+        email: input.owner.email?.trim() ?? existing.owner.email,
+      }
+    : existing.owner;
+
   const location = input.location
     ? {
         country: input.location.country?.trim() ?? existing.location.country,
@@ -116,8 +160,20 @@ export function updateFarm(
     ...existing,
     name: input.name?.trim() ?? existing.name,
     code,
-    commodityId: input.commodityId ?? existing.commodityId,
+    status: input.status ?? existing.status,
+    owner,
+    commodityIds: input.commodityIds ?? existing.commodityIds,
     location,
+    annualProductionEstimateKg:
+      input.annualProductionEstimateKg === null
+        ? undefined
+        : (input.annualProductionEstimateKg ?? existing.annualProductionEstimateKg),
+    areaHectares:
+      input.areaHectares === null
+        ? undefined
+        : (input.areaHectares ?? existing.areaHectares),
+    ownershipVerified: input.ownershipVerified ?? existing.ownershipVerified,
+    declarationAccepted: input.declarationAccepted ?? existing.declarationAccepted,
     updatedAt: new Date().toISOString(),
   };
 

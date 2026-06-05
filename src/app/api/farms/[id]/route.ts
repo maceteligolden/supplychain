@@ -5,9 +5,9 @@ import {
 } from "@/lib/validation/schemas/farm.schema";
 import { validate } from "@/lib/validation";
 import {
+  areCommoditiesLinked,
   deleteFarm,
   getFarmById,
-  isCommodityLinked,
   isFarmCodeTaken,
   updateFarm,
 } from "@/mocks/data/farms";
@@ -75,22 +75,24 @@ export async function PATCH(
           });
         }
 
-        if (input.commodityId && !isCommodityLinked(input.commodityId)) {
+        if (input.commodityIds && !areCommoditiesLinked(input.commodityIds)) {
           throw createAppError({
             code: "VALIDATION_ERROR",
-            message: "Selected commodity does not exist",
+            message: "One or more selected commodities do not exist",
             statusCode: 400,
             details: {
-              issues: [{ path: "commodityId", message: "Commodity must exist" }],
+              issues: [{ path: "commodityIds", message: "All commodities must exist" }],
             },
           });
         }
 
         const updated = updateFarm(id, {
-          name: input.name,
-          code: input.code,
-          commodityId: input.commodityId,
-          location: input.location,
+          ...input,
+          annualProductionEstimateKg:
+            input.annualProductionEstimateKg === null
+              ? undefined
+              : input.annualProductionEstimateKg,
+          areaHectares: input.areaHectares === null ? undefined : input.areaHectares,
         });
 
         if (!updated) {
@@ -117,7 +119,6 @@ export async function DELETE(
     handler: async (): Promise<Response> => {
       try {
         const { id } = await context.params;
-        // POC: allow delete freely. Later phases may block if farm has linked batches.
         const deleted = deleteFarm(id);
 
         if (!deleted) {

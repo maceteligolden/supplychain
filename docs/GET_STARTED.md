@@ -79,7 +79,7 @@ Complete these steps **in order** before creating or running a supply chain. Eac
 | Step | Module              | Why it matters                                                                                        |
 | ---- | ------------------- | ----------------------------------------------------------------------------------------------------- |
 | 1    | **Commodities**     | Defines the product and unit (KG, TON, etc.). Farms and batches inherit the unit.                     |
-| 2    | **Farms**           | Source locations; each farm is linked to one commodity.                                               |
+| 2    | **Farms**           | Source locations; each farm links to one or more commodities and an owner.                            |
 | 3    | **Harvest batches** | Records how much was harvested and is available to allocate.                                          |
 | 4    | **Actors**          | Organisations required when recording lifecycle events. Only **ACTIVE** actors appear in event forms. |
 | 5    | **Supply chains**   | Ties farms, batches, and events into one traceability journey.                                        |
@@ -116,10 +116,15 @@ Ghana Cocoa Export Chain already has **Harvest** and **Collection** events linke
 **Go to:** Sidebar → **Farms** (`/farms`)
 
 1. Click **Add farm**.
-2. Enter **name**, **code**, select an existing **commodity**, and **location** (country, region, city; GPS optional).
-3. Save.
+2. **Step 1 — Farm:** enter **name**, **code**, and select one or more **commodities** (required).
+3. **Step 2 — Owner:** enter owner contact details, or click **Skip for now**.
+4. **Step 3 — Location:** enter country, region, city (GPS optional), or **Skip for now**.
+5. **Step 4 — Compliance:** optional production estimate and compliance checkboxes, or **Skip for now**.
+6. Click **Create farm**. New farms start in **Draft** status.
 
-To open a farm’s detail page, click the farm **name** or choose **View farm** from the row menu.
+When **editing** a farm, step 4 includes a **status** dropdown (Super Admin can advance the workflow manually in this POC).
+
+To open a farm’s detail page, click the farm **name** or choose **View farm** from the row menu. The detail page shows owner, status, commodities, and compliance flags.
 
 ---
 
@@ -128,8 +133,9 @@ To open a farm’s detail page, click the farm **name** or choose **View farm** 
 **Go to:** Farm detail → **Batch management** tab (`/farms/[farmId]`)
 
 1. Click **Add batch**.
-2. Enter **harvest date** and **quantity** (unit comes from the farm’s commodity).
-3. Save.
+2. If the farm grows **more than one commodity**, select which commodity this batch is for.
+3. Enter **harvest date** and **quantity** (unit comes from the batch commodity).
+4. Save.
 
 Batch numbers are generated automatically (e.g. `BATCH_ASHANTI_COCOA_FARM_2025_001`).
 

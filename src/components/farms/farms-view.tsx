@@ -15,8 +15,16 @@ import { ListViewToolbar } from "@/components/layout/list-view-toolbar";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FARM_STATUSES, FARM_STATUS_LABELS } from "@/config/farm-status";
 import type { ListViewPageSize } from "@/config/list-view";
-import { filterItemsByField, filterItemsBySearch } from "@/lib/list-view/filter-items";
+import { filterItemsBySearch } from "@/lib/list-view/filter-items";
 import { paginateItems } from "@/lib/list-view/paginate-items";
 import type { CommodityInterface } from "@/types/commodity.interface";
 import type { FarmInterface } from "@/types/farm.interface";
@@ -41,6 +49,7 @@ export function FarmsView({ farms, commodities }: FarmsViewProps): React.JSX.Ele
   const [formKey, setFormKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [commodityFilter, setCommodityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [layout, setLayout] = useState<ListViewLayout>("table");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<ListViewPageSize>(
@@ -70,20 +79,43 @@ export function FarmsView({ farms, commodities }: FarmsViewProps): React.JSX.Ele
     [commodities],
   );
 
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: "all", label: "All statuses" },
+      ...FARM_STATUSES.map((status) => ({
+        value: status,
+        label: FARM_STATUS_LABELS[status],
+      })),
+    ],
+    [],
+  );
+
   const filteredFarms = useMemo(() => {
     const searched = filterItemsBySearch(farms, searchQuery, (farm) =>
       `${farm.name} ${farm.code} ${farm.location.city} ${farm.location.region} ${farm.location.country}`.trim(),
     );
 
-    return filterItemsByField(searched, commodityFilter, (farm) => farm.commodityId);
-  }, [farms, searchQuery, commodityFilter]);
+    const byCommodity =
+      commodityFilter === "all"
+        ? searched
+        : searched.filter((farm) => farm.commodityIds.includes(commodityFilter));
+
+    if (statusFilter === "all") {
+      return byCommodity;
+    }
+
+    return byCommodity.filter((farm) => farm.status === statusFilter);
+  }, [farms, searchQuery, commodityFilter, statusFilter]);
 
   const pagination = useMemo(
     () => paginateItems(filteredFarms, currentPage, pageSize),
     [filteredFarms, currentPage, pageSize],
   );
 
-  const hasActiveFilters = searchQuery.trim().length > 0 || commodityFilter !== "all";
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    commodityFilter !== "all" ||
+    statusFilter !== "all";
   const emptyMessage = hasActiveFilters
     ? "No farms match your search or filter."
     : "No farms yet. Add your first farm to get started.";
@@ -100,6 +132,11 @@ export function FarmsView({ farms, commodities }: FarmsViewProps): React.JSX.Ele
 
   function handlePageSizeChange(nextPageSize: ListViewPageSize): void {
     setPageSize(nextPageSize);
+    setCurrentPage(1);
+  }
+
+  function handleStatusFilterChange(value: string): void {
+    setStatusFilter(value);
     setCurrentPage(1);
   }
 
@@ -124,7 +161,7 @@ export function FarmsView({ farms, commodities }: FarmsViewProps): React.JSX.Ele
     <div className="gap-section flex flex-col">
       <PageHeader
         title="Farms"
-        description="Register and manage farms — link each farm to a commodity and location."
+        description="Register and manage farms — link commodities, owners, and locations."
         actions={
           <Button onClick={handleCreate} disabled={commodities.length === 0}>
             <PlusIcon className="size-4" />
@@ -141,17 +178,38 @@ export function FarmsView({ farms, commodities }: FarmsViewProps): React.JSX.Ele
       ) : (
         <Card>
           <CardContent className="gap-card flex flex-col pt-6">
-            <ListViewToolbar
-              searchValue={searchQuery}
-              onSearchChange={handleSearchChange}
-              searchPlaceholder="Search by name, code, or location…"
-              filterValue={commodityFilter}
-              onFilterChange={handleFilterChange}
-              filterOptions={commodityFilterOptions}
-              filterLabel="Filter by commodity"
-              layout={layout}
-              onLayoutChange={setLayout}
-            />
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <ListViewToolbar
+                searchValue={searchQuery}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search by name, code, or location…"
+                filterValue={commodityFilter}
+                onFilterChange={handleFilterChange}
+                filterOptions={commodityFilterOptions}
+                filterLabel="Filter by commodity"
+                layout={layout}
+                onLayoutChange={setLayout}
+              />
+              <Select
+                value={statusFilter}
+                onValueChange={(value): void => {
+                  if (value !== null) {
+                    handleStatusFilterChange(value);
+                  }
+                }}
+              >
+                <SelectTrigger aria-label="Filter by status" className="w-[200px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {statusFilterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {layout === "table" ? (
               <FarmTable
                 farms={pagination.items}

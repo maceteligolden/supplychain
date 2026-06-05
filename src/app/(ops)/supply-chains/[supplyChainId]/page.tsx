@@ -70,7 +70,9 @@ export default async function SupplyChainDetailPage({
   const linkedFarms = farms.filter((farm) => farmIds.has(farm.id));
 
   const commodity = commodities.find(
-    (item) => item.id === (supplyChain.commodityId ?? linkedFarms[0]?.commodityId),
+    (item) =>
+      item.id === supplyChain.commodityId ||
+      linkedFarms[0]?.commodityIds.includes(item.id),
   );
 
   return (

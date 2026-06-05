@@ -16,11 +16,14 @@ import type { ListViewPageSize } from "@/config/list-view";
 import { filterItemsBySearch } from "@/lib/list-view/filter-items";
 import { paginateItems } from "@/lib/list-view/paginate-items";
 import type { BatchInterface } from "@/types/batch.interface";
+import type { CommodityInterface } from "@/types/commodity.interface";
 import type { ListViewLayout } from "@/types/list-view.interface";
 
 export interface BatchesTabProps {
   farmId: string;
   batches: BatchInterface[];
+  farmCommodityIds: string[];
+  commodities: CommodityInterface[];
 }
 
 const STATUS_FILTER_OPTIONS = [
@@ -35,7 +38,12 @@ const STATUS_FILTER_OPTIONS = [
  *
  * Harvest batch list and CRUD for a selected farm.
  */
-export function BatchesTab({ farmId, batches }: BatchesTabProps): React.JSX.Element {
+export function BatchesTab({
+  farmId,
+  batches,
+  farmCommodityIds,
+  commodities,
+}: BatchesTabProps): React.JSX.Element {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
@@ -137,6 +145,8 @@ export function BatchesTab({ farmId, batches }: BatchesTabProps): React.JSX.Elem
         open={formOpen}
         onOpenChange={setFormOpen}
         farmId={farmId}
+        farmCommodityIds={farmCommodityIds}
+        commodities={commodities}
         batch={selectedBatch}
       />
       <BatchDeleteDialog

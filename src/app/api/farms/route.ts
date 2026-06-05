@@ -5,9 +5,9 @@ import {
 } from "@/lib/validation/schemas/farm.schema";
 import { validate } from "@/lib/validation";
 import {
+  areCommoditiesLinked,
   createFarm,
   getAllFarms,
-  isCommodityLinked,
   isFarmCodeTaken,
 } from "@/mocks/data/farms";
 import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
@@ -46,13 +46,13 @@ export async function POST(request: Request): Promise<Response> {
           });
         }
 
-        if (!isCommodityLinked(input.commodityId)) {
+        if (!areCommoditiesLinked(input.commodityIds)) {
           throw createAppError({
             code: "VALIDATION_ERROR",
-            message: "Selected commodity does not exist",
+            message: "One or more selected commodities do not exist",
             statusCode: 400,
             details: {
-              issues: [{ path: "commodityId", message: "Commodity must exist" }],
+              issues: [{ path: "commodityIds", message: "All commodities must exist" }],
             },
           });
         }
@@ -60,8 +60,14 @@ export async function POST(request: Request): Promise<Response> {
         const farm = createFarm({
           name: input.name,
           code: input.code,
-          commodityId: input.commodityId,
+          status: input.status ?? "DRAFT",
+          owner: input.owner,
+          commodityIds: input.commodityIds,
           location: input.location,
+          annualProductionEstimateKg: input.annualProductionEstimateKg,
+          areaHectares: input.areaHectares,
+          ownershipVerified: input.ownershipVerified,
+          declarationAccepted: input.declarationAccepted,
         });
 
         return jsonResponse({ data: farm, status: 201 });

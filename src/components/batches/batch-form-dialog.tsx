@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
 import { createBatch, updateBatch } from "@/services/batches.service";
 import type { BatchInterface } from "@/types/batch.interface";
+import type { CommodityInterface } from "@/types/commodity.interface";
 
 export interface BatchFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   farmId: string;
+  farmCommodityIds: string[];
+  commodities: CommodityInterface[];
   batch?: BatchInterface;
 }
 
@@ -35,14 +45,27 @@ export function BatchFormDialog({
   open,
   onOpenChange,
   farmId,
+  farmCommodityIds,
+  commodities,
   batch,
 }: BatchFormDialogProps): React.JSX.Element {
   const router = useRouter();
   const isEdit = Boolean(batch);
 
+  const farmCommodities = useMemo(
+    () => commodities.filter((commodity) => farmCommodityIds.includes(commodity.id)),
+    [commodities, farmCommodityIds],
+  );
+
+  const defaultCommodityId =
+    batch?.commodityId ?? (farmCommodityIds.length === 1 ? farmCommodityIds[0] : "");
+
+  const [commodityId, setCommodityId] = useState(defaultCommodityId);
   const [harvestDate, setHarvestDate] = useState(batch?.harvestDate ?? "");
   const [quantity, setQuantity] = useState(batch ? String(batch.quantity) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const showCommoditySelect = !isEdit && farmCommodityIds.length > 1;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -62,6 +85,7 @@ export function BatchFormDialog({
           farmId,
           harvestDate,
           quantity: parsedQuantity,
+          ...(showCommoditySelect ? { commodityId } : {}),
         });
         showSuccessToast("Harvest batch created successfully.");
       }
@@ -100,6 +124,31 @@ export function BatchFormDialog({
               <code className="text-sm">{batch.batchNumber}</code>
             </div>
           ) : null}
+          {showCommoditySelect ? (
+            <div className="gap-card flex flex-col">
+              <Label>Commodity</Label>
+              <Select
+                value={commodityId}
+                onValueChange={(value): void => {
+                  if (value !== null) {
+                    setCommodityId(value);
+                  }
+                }}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select commodity" />
+                </SelectTrigger>
+                <SelectContent>
+                  {farmCommodities.map((commodity) => (
+                    <SelectItem key={commodity.id} value={commodity.id}>
+                      {commodity.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
           <div className="gap-card flex flex-col">
             <Label htmlFor="harvest-date">Harvest date</Label>
             <Input
@@ -133,7 +182,10 @@ export function BatchFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || (showCommoditySelect && !commodityId)}
+            >
               {isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create batch"}
             </Button>
           </DialogFooter>

@@ -90,6 +90,26 @@ The POC is built **one functional requirement at a time**. Each phase adds mock 
 - `GET /api/supply-chains/[id]/report` — report JSON payload
 - Client-side download via Export report menu on `/supply-chains/[supplyChainId]`
 
+### Phase 12 — Deforestation: Farm entity update
+
+- Extended farm model: **owner**, **status** workflow, **commodityIds[]** (multi-commodity), compliance fields
+- Full CRUD via `/api/farms` and `/api/farms/[id]` with Joi validation
+- **4-step create/edit wizard** (farm → owner → location → compliance) with **Skip for now** on optional steps
+- Farms list: status badge, multi-commodity badges, commodity + **status** filters
+- Farm detail: owner, status, commodities, production estimate, compliance flags, area (when set)
+- Batches: optional **commodity** select when farm has 2+ commodities
+- Supply chain wizard: farms filtered by `commodityIds.includes(commodityId)`
+- Status enum: DRAFT → MAPPED → READY_FOR_ASSESSMENT → UNDER_REVIEW → ASSESSED → APPROVED → REJECTED (manual edit in POC)
+
+## Deforestation module roadmap (upcoming)
+
+| Phase | Requirement    | Depends on                | Delivers                                                          |
+| ----- | -------------- | ------------------------- | ----------------------------------------------------------------- |
+| 13    | FR-11 Boundary | Farm                      | FarmBoundary, map draw/edit, area calc, status → MAPPED           |
+| 14    | FR-12–15       | Farm + Boundary           | FarmAssessment, mock deforestation analysis, risk LOW/MEDIUM/HIGH |
+| 15    | FR-16–17       | Assessments               | Farm assessment tab, history, land-cover timeline                 |
+| 16    | FR-18          | Farm risk + Supply chains | Chain-level risk summary on supply chain detail/dashboard         |
+
 ## Upcoming (in order)
 
 | Phase | Requirement                     | Key screens            |

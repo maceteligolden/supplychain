@@ -56,7 +56,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
 
         const commodity =
           getCommodityById(supplyChain.commodityId ?? "") ??
-          (farms[0] ? getCommodityById(farms[0].commodityId) : undefined);
+          (farms[0] ? getCommodityById(farms[0].commodityIds[0] ?? "") : undefined);
 
         const output: GetSupplyChainReportOutput = buildSupplyChainReport({
           supplyChain,

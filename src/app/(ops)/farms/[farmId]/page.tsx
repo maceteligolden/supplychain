@@ -32,13 +32,14 @@ export default async function FarmDetailPage({
     notFound();
   }
 
-  const commodityName =
-    commodities.find((item) => item.id === farm.commodityId)?.name ?? "Unknown";
+  const farmCommodities = commodities.filter((item) =>
+    farm.commodityIds.includes(item.id),
+  );
 
   return (
     <FarmDetailView
       farm={farm}
-      commodityName={commodityName}
+      commodities={farmCommodities}
       batches={batches}
       allocations={allocations}
       supplyChains={supplyChains}

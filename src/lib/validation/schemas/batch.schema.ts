@@ -11,6 +11,7 @@ export const createBatchSchema = Joi.object({
     }),
   quantity: Joi.number().positive().required(),
   batchNumber: Joi.string().trim().uppercase().min(2).max(80).optional(),
+  commodityId: Joi.string().trim().optional(),
 });
 
 export const updateBatchSchema = Joi.object({
@@ -29,6 +30,7 @@ export type CreateBatchSchemaInput = {
   harvestDate: string;
   quantity: number;
   batchNumber?: string;
+  commodityId?: string;
 };
 
 export type UpdateBatchSchemaInput = {

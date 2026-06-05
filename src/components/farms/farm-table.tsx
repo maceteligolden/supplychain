@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { farmDetailPage } from "@/config/page-routes";
+import { FARM_STATUS_BADGE_VARIANT, FARM_STATUS_LABELS } from "@/config/farm-status";
 import { formatFarmLocation } from "@/lib/farm/format-location";
 import type { FarmInterface } from "@/types/farm.interface";
 
@@ -62,7 +63,8 @@ export function FarmTable({
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Code</TableHead>
-          <TableHead>Commodity</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Commodities</TableHead>
           <TableHead>Location</TableHead>
           <TableHead>Created</TableHead>
           <TableHead className="w-12">
@@ -85,9 +87,18 @@ export function FarmTable({
               <code className="text-xs">{farm.code}</code>
             </TableCell>
             <TableCell>
-              <Badge variant="secondary">
-                {commodityNames[farm.commodityId] ?? "Unknown"}
+              <Badge variant={FARM_STATUS_BADGE_VARIANT[farm.status]}>
+                {FARM_STATUS_LABELS[farm.status]}
               </Badge>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-wrap gap-1">
+                {farm.commodityIds.map((commodityId) => (
+                  <Badge key={commodityId} variant="secondary">
+                    {commodityNames[commodityId] ?? "Unknown"}
+                  </Badge>
+                ))}
+              </div>
             </TableCell>
             <TableCell className="text-muted-foreground max-w-xs truncate">
               {formatFarmLocation(farm.location)}

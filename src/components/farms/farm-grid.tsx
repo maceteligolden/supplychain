@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { farmDetailPage } from "@/config/page-routes";
+import { FARM_STATUS_BADGE_VARIANT, FARM_STATUS_LABELS } from "@/config/farm-status";
 import { formatFarmLocation } from "@/lib/farm/format-location";
 import type { FarmInterface } from "@/types/farm.interface";
 
@@ -89,9 +90,14 @@ export function FarmGrid({
             <CardContent className="gap-card flex flex-col">
               <div className="flex flex-wrap items-center gap-2">
                 <code className="text-muted-foreground text-xs">{farm.code}</code>
-                <Badge variant="secondary">
-                  {commodityNames[farm.commodityId] ?? "Unknown"}
+                <Badge variant={FARM_STATUS_BADGE_VARIANT[farm.status]}>
+                  {FARM_STATUS_LABELS[farm.status]}
                 </Badge>
+                {farm.commodityIds.map((commodityId) => (
+                  <Badge key={commodityId} variant="secondary">
+                    {commodityNames[commodityId] ?? "Unknown"}
+                  </Badge>
+                ))}
               </div>
               <div className="text-muted-foreground flex items-start gap-2 text-sm">
                 <MapPinIcon className="mt-0.5 size-4 shrink-0" />

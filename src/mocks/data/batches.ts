@@ -67,7 +67,23 @@ export function createBatch(input: CreateBatchInput): BatchInterface {
     throw new Error("Farm not found");
   }
 
-  const commodity = getCommodityById(farm.commodityId);
+  if (farm.commodityIds.length === 0) {
+    throw new Error("Farm has no commodities configured");
+  }
+
+  const resolvedCommodityId =
+    input.commodityId ??
+    (farm.commodityIds.length === 1 ? farm.commodityIds[0] : undefined);
+
+  if (!resolvedCommodityId) {
+    throw new Error("Commodity is required when the farm grows multiple commodities");
+  }
+
+  if (!farm.commodityIds.includes(resolvedCommodityId)) {
+    throw new Error("Selected commodity is not grown on this farm");
+  }
+
+  const commodity = getCommodityById(resolvedCommodityId);
   if (!commodity) {
     throw new Error("Commodity not found");
   }
@@ -85,7 +101,7 @@ export function createBatch(input: CreateBatchInput): BatchInterface {
     id: generateId(),
     batchNumber,
     farmId: input.farmId,
-    commodityId: farm.commodityId,
+    commodityId: resolvedCommodityId,
     harvestDate: input.harvestDate,
     quantity: input.quantity,
     unit: commodity.unit,

@@ -150,7 +150,7 @@ export function SupplyChainWizardDialog({
   );
 
   const commodityFarms = useMemo(
-    () => farms.filter((farm) => farm.commodityId === commodityId),
+    () => farms.filter((farm) => farm.commodityIds.includes(commodityId)),
     [farms, commodityId],
   );
 

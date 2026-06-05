@@ -103,16 +103,29 @@ API routes: `GET/POST /api/commodities`, `GET/PATCH/DELETE /api/commodities/[id]
 
 Route: `/farms` (sidebar link when authenticated).
 
-| Field     | Description                                                      |
-| --------- | ---------------------------------------------------------------- |
-| Name      | Display name (e.g. Ashanti Cocoa Farm)                           |
-| Code      | Uppercase unique identifier — auto-generated from name, editable |
-| Commodity | Must link to an existing commodity                               |
-| Location  | Country, region, city, optional latitude/longitude               |
+**Create / edit wizard** (4 steps):
+
+1. **Farm** — name, code, one or more commodities (required)
+2. **Owner** — first name, last name, phone, email (optional — skip for now)
+3. **Location** — country, region, city, optional GPS (optional — skip for now)
+4. **Compliance** — annual production estimate, ownership verified, declaration accepted; **status** on edit only
+
+| Field                      | Description                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Name                       | Display name (e.g. Ashanti Cocoa Farm)                                                                        |
+| Code                       | Uppercase unique identifier — auto-generated from name, editable                                              |
+| Commodities                | One or more linked commodities (`commodityIds[]`)                                                             |
+| Status                     | DRAFT, MAPPED, READY_FOR_ASSESSMENT, UNDER_REVIEW, ASSESSED, APPROVED, REJECTED — defaults to DRAFT on create |
+| Owner                      | firstName, lastName, phone, email — empty when skipped                                                        |
+| Location                   | Country, region, city, optional latitude/longitude                                                            |
+| Annual production estimate | Optional kg estimate                                                                                          |
+| Ownership verified         | Boolean compliance flag                                                                                       |
+| Declaration accepted       | Boolean compliance flag                                                                                       |
+| Area (hectares)            | Optional — populated by boundary module in a later phase                                                      |
 
 Pre-seeded mock farms: **Ashanti Cocoa Farm** (Cocoa, Ghana) and **Kordofan Gum Farm** (Gum Arabic, Sudan).
 
-List controls: search, commodity filter, table/grid layout switcher, client-side pagination, toast feedback.
+List controls: search, commodity filter, **status filter**, table/grid layout switcher, client-side pagination, toast feedback.
 
 API routes: `GET/POST /api/farms`, `GET/PATCH/DELETE /api/farms/[id]`.
 
