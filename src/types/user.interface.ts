@@ -38,3 +38,7 @@ export type GetCurrentUserOutput = UserInterface;
 export type LogoutOutput = {
   success: boolean;
 };
+
+export type RefreshSessionOutput = {
+  user: UserInterface;
+};

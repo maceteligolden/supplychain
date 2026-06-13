@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
-
 import { CommodityActionsMenu } from "@/components/commodities/commodity-actions-menu";
+import { CommodityThumbnail } from "@/components/commodities/commodity-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -65,14 +64,8 @@ export function CommodityGrid({
             </CardAction>
           </CardHeader>
           <CardContent className="gap-card flex flex-col">
-            <div className="bg-muted relative aspect-video overflow-hidden rounded-lg">
-              <Image
-                src={commodity.imageUrl}
-                alt={commodity.name}
-                fill
-                className="object-cover"
-                unoptimized
-              />
+            <div className="bg-muted relative flex aspect-video items-center justify-center overflow-hidden rounded-lg">
+              <CommodityThumbnail name={commodity.name} imageUrl={commodity.imageUrl} />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <code className="text-muted-foreground text-xs">{commodity.code}</code>

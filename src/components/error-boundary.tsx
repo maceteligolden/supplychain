@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<
       }
 
       return (
-        <div className="gap-card border-border bg-muted p-section flex flex-col items-center rounded-lg border text-center">
+        <div className="gap-card border-border bg-muted p-page rounded-card flex flex-col items-center border text-center">
           <h2 className="text-foreground text-lg font-semibold">
             Something went wrong
           </h2>

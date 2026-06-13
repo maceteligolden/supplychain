@@ -257,21 +257,24 @@ export function FarmDetailView({
                 Harvest batches recorded for this farm
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="gap-grid grid sm:grid-cols-3">
               <StatCard
                 label="Total batches"
                 value={stats.totalBatches}
                 description="Harvest batches recorded"
+                variant="primary"
               />
               <StatCard
                 label="Unallocated batches"
                 value={stats.unallocatedBatches}
                 description="No quantity allocated yet"
+                variant="warning"
               />
               <StatCard
                 label="Allocated batches"
                 value={stats.allocatedBatches}
                 description="Partially or fully allocated"
+                variant="success"
               />
             </div>
           </section>

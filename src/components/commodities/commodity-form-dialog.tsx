@@ -83,7 +83,7 @@ export function CommodityFormDialog({
       name,
       code,
       unit,
-      imageFileName: imageFile?.name,
+      imageFile,
     };
 
     try {
@@ -118,7 +118,7 @@ export function CommodityFormDialog({
           <DialogTitle>{isEdit ? "Edit commodity" : "Add commodity"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Update commodity details. Image upload is a mock stub."
+              ? "Update commodity details and optionally replace the image."
               : "Create a new commodity for the traceability platform."}
           </DialogDescription>
         </DialogHeader>

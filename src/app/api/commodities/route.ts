@@ -9,13 +9,27 @@ import {
   getAllCommodities,
   isCodeTaken,
 } from "@/mocks/data/commodities";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type {
   GetCommoditiesOutput,
   GetCommodityOutput,
 } from "@/types/commodity.interface";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/commodities" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to list commodities" });
+    }
+  }
+
   return withMockDelay({
     handler: (): Response => {
       const items = getAllCommodities();
@@ -29,6 +43,14 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/commodities" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to create commodity" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

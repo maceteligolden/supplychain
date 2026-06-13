@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ActivityIcon } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { DashboardPanel } from "@/components/layout/dashboard-panel";
 import { supplyChainDetailPage } from "@/config/page-routes";
 import type { DashboardRecentActivityInterface } from "@/types/dashboard.interface";
 
@@ -36,34 +31,38 @@ export function RecentActivityFeed({
   recentActivity,
 }: RecentActivityFeedProps): React.JSX.Element {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent activity</CardTitle>
-        <CardDescription>
-          Latest lifecycle events recorded across all supply chains.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {recentActivity.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No events recorded yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-4">
-            {recentActivity.map((item) => (
-              <li key={item.id} className="flex flex-col gap-1">
+    <DashboardPanel
+      accent="info"
+      title="Recent activity"
+      description="Latest lifecycle events recorded across all supply chains."
+    >
+      {recentActivity.length === 0 ? (
+        <p className="text-text-secondary text-sm">No events recorded yet.</p>
+      ) : (
+        <ul className="gap-card flex flex-col">
+          {recentActivity.map((item) => (
+            <li
+              key={item.id}
+              className="border-border/60 bg-background/70 gap-tight rounded-control flex gap-3 border p-3"
+            >
+              <div className="bg-info/15 text-info rounded-control flex size-8 shrink-0 items-center justify-center">
+                <ActivityIcon className="size-4" aria-hidden />
+              </div>
+              <div className="gap-tight flex min-w-0 flex-col">
                 <Link
                   href={supplyChainDetailPage(item.supplyChainId)}
-                  className="text-foreground text-sm font-medium hover:underline"
+                  className="text-link text-sm leading-snug font-medium hover:underline"
                 >
                   {item.description}
                 </Link>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-text-secondary text-xs tabular-nums">
                   {formatDateTime(item.occurredAt)}
                 </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashboardPanel>
   );
 }

@@ -13,7 +13,7 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <div className="bg-muted p-page flex min-h-screen flex-col items-center justify-center">
+    <div className="bg-surface-secondary p-page flex min-h-screen flex-col items-center justify-center">
       <div className="gap-section mb-8 flex flex-col items-center text-center">
         <h1 className="text-foreground text-2xl font-bold">Traceability Platform</h1>
         <p className="text-muted-foreground text-sm">

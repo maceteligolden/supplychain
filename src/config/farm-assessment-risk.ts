@@ -11,9 +11,9 @@ export const ASSESSMENT_RISK_LABELS: Record<AssessmentRiskLevel, string> = {
 /** Badge variant hint for assessment risk display. */
 export const ASSESSMENT_RISK_BADGE_VARIANT: Record<
   AssessmentRiskLevel,
-  "secondary" | "outline" | "destructive"
+  "success" | "warning" | "destructive"
 > = {
-  LOW: "secondary",
-  MEDIUM: "outline",
+  LOW: "success",
+  MEDIUM: "warning",
   HIGH: "destructive",
 };

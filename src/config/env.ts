@@ -11,12 +11,18 @@ export interface EnvInterface {
   mockDelayMs: number;
   /** Public app URL used for absolute fetch in server components. */
   appUrl: string;
-  /** httpOnly session cookie name. */
+  /** Mock httpOnly session cookie name. */
   sessionCookieName: string;
-  /** Session max age in seconds. */
+  /** Session max age in seconds for mock sessions. */
   sessionMaxAgeSeconds: number;
   /** Secret used to sign mock session tokens (server-only). */
   sessionSecret: string;
+  /** Backend access JWT cookie name. */
+  accessCookieName: string;
+  /** Backend refresh token cookie name. */
+  refreshCookieName: string;
+  /** JWT secret shared with backend for edge access token verification. */
+  jwtSecret: string;
 }
 
 const envSchema = Joi.object({
@@ -27,6 +33,9 @@ const envSchema = Joi.object({
   SESSION_COOKIE_NAME: Joi.string().default("sc_session"),
   SESSION_MAX_AGE_SECONDS: Joi.string().pattern(/^\d+$/).default("86400"),
   SESSION_SECRET: Joi.string().min(16).default("traceability-poc-dev-secret"),
+  ACCESS_COOKIE_NAME: Joi.string().default("sc_access"),
+  REFRESH_COOKIE_NAME: Joi.string().default("sc_refresh"),
+  JWT_SECRET: Joi.string().min(1).default("change-me-in-production"),
 });
 
 type ParseEnvInput = Record<string, string | undefined>;
@@ -39,6 +48,9 @@ type EnvSchemaOutput = {
   SESSION_COOKIE_NAME: string;
   SESSION_MAX_AGE_SECONDS: string;
   SESSION_SECRET: string;
+  ACCESS_COOKIE_NAME: string;
+  REFRESH_COOKIE_NAME: string;
+  JWT_SECRET: string;
 };
 
 function parseEnv(raw: ParseEnvInput): EnvInterface {
@@ -56,6 +68,9 @@ function parseEnv(raw: ParseEnvInput): EnvInterface {
     sessionCookieName: parsed.SESSION_COOKIE_NAME,
     sessionMaxAgeSeconds: Number(parsed.SESSION_MAX_AGE_SECONDS),
     sessionSecret: parsed.SESSION_SECRET,
+    accessCookieName: parsed.ACCESS_COOKIE_NAME,
+    refreshCookieName: parsed.REFRESH_COOKIE_NAME,
+    jwtSecret: parsed.JWT_SECRET,
   };
 }
 
@@ -69,4 +84,7 @@ export const env: EnvInterface = parseEnv({
   SESSION_COOKIE_NAME: process.env.SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS: process.env.SESSION_MAX_AGE_SECONDS,
   SESSION_SECRET: process.env.SESSION_SECRET,
+  ACCESS_COOKIE_NAME: process.env.ACCESS_COOKIE_NAME,
+  REFRESH_COOKIE_NAME: process.env.REFRESH_COOKIE_NAME,
+  JWT_SECRET: process.env.JWT_SECRET,
 });

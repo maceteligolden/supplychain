@@ -57,21 +57,5 @@ export async function withMockDelay(input: WithMockDelayInput): Promise<Response
   return input.handler();
 }
 
-type ProxyRequestInput = {
-  request: Request;
-  targetPath: string;
-};
-
-/** Stub for future real-backend proxy — not used while mock API is active. */
-export function proxyRequest(input: ProxyRequestInput): never {
-  logger.warn("Proxy request called but real backend is not configured", {
-    namespace: "api",
-    meta: { targetPath: input.targetPath },
-  });
-
-  throw createAppError({
-    code: "INTERNAL_ERROR",
-    message: "Real backend proxy is not yet configured",
-    statusCode: 501,
-  });
-}
+/** Re-export proxy helper for route handlers. */
+export { proxyRequest } from "@/lib/api/proxy-request";

@@ -2,7 +2,7 @@ import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { OngoingChainsCard } from "@/components/dashboard/ongoing-chains-card";
 import { RecentActivityFeed } from "@/components/dashboard/recent-activity-feed";
 import { PageHeader } from "@/components/layout/page-header";
-import { StatCard } from "@/components/layout/stat-card";
+import { StatCard, KPI_VARIANT_BY_ID } from "@/components/layout/stat-card";
 import type { DashboardSummaryInterface } from "@/types/dashboard.interface";
 import type { UserInterface } from "@/types/user.interface";
 
@@ -29,18 +29,19 @@ export function DashboardView({
         description={`Welcome back, ${user.firstName}. Traceability overview for the POC.`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="gap-grid grid sm:grid-cols-2 lg:grid-cols-5">
         {summary.kpis.map((kpi) => (
           <StatCard
             key={kpi.id}
             label={kpi.label}
             value={kpi.value}
             description={kpi.description}
+            variant={KPI_VARIANT_BY_ID[kpi.id] ?? "neutral"}
           />
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="gap-grid grid lg:grid-cols-2">
         <OngoingChainsCard ongoingSupplyChains={summary.ongoingSupplyChains} />
         <RecentActivityFeed recentActivity={summary.recentActivity} />
       </div>

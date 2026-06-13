@@ -10,7 +10,13 @@ import {
   isCodeTaken,
   updateCommodity,
 } from "@/mocks/data/commodities";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type {
   DeleteCommodityOutput,
   GetCommodityOutput,
@@ -20,7 +26,19 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/commodities/${id}`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to get commodity" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -47,6 +65,18 @@ export async function PATCH(
   request: Request,
   context: RouteContext,
 ): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/commodities/${id}`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to update commodity" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -101,9 +131,21 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: RouteContext,
 ): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/commodities/${id}`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to delete commodity" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

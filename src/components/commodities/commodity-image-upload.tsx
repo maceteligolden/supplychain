@@ -19,9 +19,8 @@ export interface CommodityImageUploadProps {
 /**
  * CommodityImageUpload
  *
- * File picker stub for commodity images. Shows a local preview via
- * object URL but does not persist files — the parent sends imageFileName
- * to the API which assigns a mock imageUrl.
+ * File picker for commodity images. Shows a local preview and sends the
+ * selected file to the API on submit (stored on the backend in local uploads).
  */
 export function CommodityImageUpload({
   previewUrl,
@@ -114,7 +113,7 @@ export function CommodityImageUpload({
             </Button>
           ) : null}
           <p className="text-muted-foreground text-xs">
-            Upload stub — preview is local only; a mock URL is saved on submit.
+            PNG or JPG up to 5 MB. Saved on the backend when you submit.
           </p>
         </div>
       </div>

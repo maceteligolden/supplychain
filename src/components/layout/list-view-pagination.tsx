@@ -60,8 +60,8 @@ export function ListViewPagination({
   const canGoNext = currentPage < totalPages;
 
   return (
-    <div className="gap-card flex flex-col border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-muted-foreground text-sm">
+    <div className="gap-card pt-card flex flex-col border-t sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-muted-foreground text-xs">
         {totalItems === 0
           ? "No results"
           : `Showing ${rangeStart}–${rangeEnd} of ${totalItems}`}

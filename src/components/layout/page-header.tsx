@@ -23,12 +23,12 @@ export function PageHeader({
   return (
     <div className="gap-card flex flex-col sm:flex-row sm:items-center sm:justify-between">
       <div className="gap-card flex flex-col">
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-foreground text-xl font-bold tracking-tight">{title}</h1>
         {description ? (
-          <p className="text-muted-foreground text-sm">{description}</p>
+          <p className="text-text-secondary text-sm leading-relaxed">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="gap-tight flex items-center">{actions}</div> : null}
     </div>
   );
 }

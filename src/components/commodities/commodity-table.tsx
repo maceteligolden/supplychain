@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
-
 import { CommodityActionsMenu } from "@/components/commodities/commodity-actions-menu";
+import { CommodityThumbnail } from "@/components/commodities/commodity-thumbnail";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -69,13 +68,10 @@ export function CommodityTable({
         {commodities.map((commodity) => (
           <TableRow key={commodity.id}>
             <TableCell>
-              <div className="bg-muted relative size-10 overflow-hidden rounded-md">
-                <Image
-                  src={commodity.imageUrl}
-                  alt={commodity.name}
-                  fill
-                  className="object-cover"
-                  unoptimized
+              <div className="bg-muted relative flex size-10 items-center justify-center overflow-hidden rounded-md">
+                <CommodityThumbnail
+                  name={commodity.name}
+                  imageUrl={commodity.imageUrl}
                 />
               </div>
             </TableCell>

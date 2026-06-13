@@ -1,7 +1,13 @@
 import { findMockUserByEmail, verifyMockUserPassword } from "@/mocks/data/users";
 import { buildSessionCookie, createSessionToken } from "@/lib/auth/session";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
 import { createAppError } from "@/lib/errors";
+import { env } from "@/config/env";
 import {
   loginSchema,
   type LoginSchemaInput,
@@ -10,6 +16,14 @@ import { validate } from "@/lib/validation";
 import type { LoginOutput } from "@/types/user.interface";
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/auth/login" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Login failed" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

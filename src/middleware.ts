@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { verifyAccessTokenEdge } from "@/lib/auth/access-token.edge";
 import { verifySessionTokenEdge } from "@/lib/auth/session.edge";
 import { env } from "@/config/env";
 import { PAGE_ROUTES } from "@/config/page-routes";
@@ -12,16 +13,55 @@ function isPublicPage(pathname: string): boolean {
 }
 
 function isPublicApiRoute(pathname: string, method: string): boolean {
-  return pathname === API_ROUTES.auth.login && method === "POST";
+  if (pathname === API_ROUTES.auth.login && method === "POST") {
+    return true;
+  }
+  if (pathname === API_ROUTES.auth.refresh && method === "POST") {
+    return true;
+  }
+  return false;
 }
 
-async function isAuthenticated(request: NextRequest): Promise<boolean> {
+async function hasValidAccessToken(request: NextRequest): Promise<boolean> {
+  const accessToken = request.cookies.get(env.accessCookieName)?.value;
+  if (!accessToken) {
+    return false;
+  }
+
+  return (await verifyAccessTokenEdge(accessToken)) !== null;
+}
+
+async function isMockAuthenticated(request: NextRequest): Promise<boolean> {
   const token = request.cookies.get(env.sessionCookieName)?.value;
   if (!token) {
     return false;
   }
   const userId = await verifySessionTokenEdge(token);
   return userId !== null;
+}
+
+async function isBackendAuthenticated(request: NextRequest): Promise<boolean> {
+  if (await hasValidAccessToken(request)) {
+    return true;
+  }
+
+  const refreshToken = request.cookies.get(env.refreshCookieName)?.value;
+  return Boolean(refreshToken);
+}
+
+async function shouldRedirectFromLoginPage(request: NextRequest): Promise<boolean> {
+  if (env.useMockApi) {
+    return isMockAuthenticated(request);
+  }
+
+  return hasValidAccessToken(request);
+}
+
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
+  if (env.useMockApi) {
+    return isMockAuthenticated(request);
+  }
+  return isBackendAuthenticated(request);
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
@@ -33,7 +73,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   if (isPublicPage(pathname)) {
-    if (authenticated) {
+    const redirectFromLogin = await shouldRedirectFromLoginPage(request);
+    if (redirectFromLogin) {
       return NextResponse.redirect(new URL(PAGE_ROUTES.dashboard, request.url));
     }
     return NextResponse.next();

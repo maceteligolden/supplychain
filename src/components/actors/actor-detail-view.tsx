@@ -105,16 +105,18 @@ export function ActorDetailView({
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="gap-grid grid sm:grid-cols-2">
         <StatCard
           label="Events recorded"
           value={stats.eventCount}
           description="Lifecycle events with this actor"
+          variant="info"
         />
         <StatCard
           label="Supply chains involved"
           value={stats.supplyChainCount}
           description="Distinct journeys referencing this actor"
+          variant="primary"
         />
       </div>
 

@@ -23,7 +23,9 @@ export type CreateCommodityInput = {
   name: string;
   code: string;
   unit: CommodityUnit;
-  /** Optional filename from the upload stub — used to build mock imageUrl. */
+  /** Optional image file uploaded with the commodity. */
+  imageFile?: File | null;
+  /** Mock-only filename stub when imageFile is not sent as multipart. */
   imageFileName?: string;
 };
 
@@ -31,6 +33,7 @@ export type UpdateCommodityInput = {
   name?: string;
   code?: string;
   unit?: CommodityUnit;
+  imageFile?: File | null;
   imageFileName?: string;
 };
 

@@ -1,6 +1,9 @@
 import type { Config } from "tailwindcss";
 
 import { brand, neutral, semantic } from "./design-tokens/colors";
+import { radii } from "./design-tokens/radii";
+import { spacing } from "./design-tokens/spacing";
+import { fontSize } from "./design-tokens/typography";
 
 /**
  * Tailwind theme extension. All colors must be defined here — never use
@@ -17,13 +20,28 @@ const config: Config = {
         foreground: semantic.foreground,
         muted: semantic.muted,
         "muted-foreground": semantic["muted-foreground"],
+        "text-secondary": semantic["text-secondary"],
         border: semantic.border,
         ring: semantic.ring,
+        "primary-hover": "var(--primary-hover)",
+        "primary-light": "var(--primary-light)",
+        "surface-secondary": "var(--surface-secondary)",
+        "surface-tertiary": "var(--surface-tertiary)",
+        success: "var(--success)",
+        warning: "var(--warning)",
+        info: "var(--info)",
       },
       spacing: {
-        page: "1.5rem",
-        section: "3rem",
-        card: "1rem",
+        page: spacing.page,
+        section: spacing.section,
+        card: spacing.card,
+        tight: spacing.tight,
+        grid: spacing.grid,
+      },
+      fontSize,
+      borderRadius: {
+        control: radii.control,
+        card: radii.card,
       },
       maxWidth: {
         content: "72rem",

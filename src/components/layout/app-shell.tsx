@@ -49,7 +49,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <header className="border-border flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        <header className="border-border bg-background/95 px-page sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b backdrop-blur">
           <SidebarTrigger />
           <Separator orientation="vertical" className="mx-2 h-4" />
           <div className="ml-auto">

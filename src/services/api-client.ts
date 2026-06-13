@@ -6,10 +6,12 @@ import {
   type AppErrorInterface,
 } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { API_ROUTES } from "@/config/api-routes";
 
 type FetchJsonInput = {
   url: string;
   options?: RequestInit;
+  skipRefresh?: boolean;
 };
 
 type ApiErrorBodyInterface = {
@@ -18,15 +20,50 @@ type ApiErrorBodyInterface = {
   details?: Record<string, unknown>;
 };
 
+let refreshPromise: Promise<void> | null = null;
+
 function resolveUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  // Browser: use same-origin relative paths so session cookies are sent and cleared correctly.
   if (typeof window !== "undefined") {
     return path;
   }
   return `${env.appUrl}${path}`;
+}
+
+async function attemptTokenRefresh(
+  cookieHeader: Record<string, string>,
+): Promise<void> {
+  if (refreshPromise) {
+    await refreshPromise;
+    return;
+  }
+
+  refreshPromise = (async (): Promise<void> => {
+    const response = await fetch(resolveUrl(API_ROUTES.auth.refresh), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...cookieHeader,
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw createAppError({
+        code: "UNAUTHORIZED",
+        message: "Session refresh failed",
+        statusCode: 401,
+      });
+    }
+  })();
+
+  try {
+    await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
 }
 
 /**
@@ -35,12 +72,18 @@ function resolveUrl(path: string): string {
  */
 export async function fetchJson<T>(input: FetchJsonInput): Promise<T> {
   const url = resolveUrl(input.url);
+  const cookieHeader =
+    typeof window === "undefined" && input.options?.headers
+      ? (input.options.headers as Record<string, string>)
+      : {};
 
-  try {
+  const executeFetch = async (): Promise<T> => {
+    const isFormDataBody = input.options?.body instanceof FormData;
+
     const response = await fetch(url, {
       ...input.options,
       headers: {
-        "Content-Type": "application/json",
+        ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
         ...input.options?.headers,
       },
       credentials: "include",
@@ -59,7 +102,28 @@ export async function fetchJson<T>(input: FetchJsonInput): Promise<T> {
     }
 
     return body as T;
+  };
+
+  try {
+    return await executeFetch();
   } catch (error) {
+    if (
+      !input.skipRefresh &&
+      isAppError(error) &&
+      error.statusCode === 401 &&
+      input.url !== API_ROUTES.auth.refresh &&
+      input.url !== API_ROUTES.auth.login
+    ) {
+      try {
+        await attemptTokenRefresh(cookieHeader);
+        return executeFetch();
+      } catch (refreshError) {
+        if (isAppError(refreshError)) {
+          throw refreshError;
+        }
+      }
+    }
+
     if (isAppError(error)) {
       throw error;
     }

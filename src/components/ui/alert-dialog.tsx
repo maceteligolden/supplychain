@@ -26,7 +26,10 @@ function AlertDialogOverlay({
     <AlertDialogPrimitive.Backdrop
       data-slot="alert-dialog-overlay"
       className={cn(
-        "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs",
+        "bg-foreground/30 fixed inset-0 isolate z-50 backdrop-blur-sm",
+        "transition-all duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "data-starting-style:opacity-0 data-starting-style:backdrop-blur-none",
+        "data-ending-style:opacity-0 data-ending-style:backdrop-blur-none",
         className,
       )}
       {...props}
@@ -48,7 +51,12 @@ function AlertDialogContent({
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          "group/alert-dialog-content bg-popover text-popover-foreground ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 ring-1 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm",
+          "group/alert-dialog-content bg-popover text-popover-foreground shadow-card gap-card rounded-card border-border/60 p-card fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 border outline-none",
+          "transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "data-starting-style:scale-95 data-starting-style:opacity-0",
+          "data-ending-style:scale-95 data-ending-style:opacity-0",
+          "shadow-[0_0_0_1px_rgb(47_111_79/0.08),0_24px_48px_-12px_rgb(16_24_40/0.22)]",
+          "data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm",
           className,
         )}
         {...props}

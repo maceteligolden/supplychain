@@ -129,26 +129,30 @@ export function SupplyChainDetailView({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="gap-grid grid sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Linked farms"
           value={stats.linkedFarmsCount}
           description="Farms supplying this chain"
+          variant="primary"
         />
         <StatCard
           label="Allocated batches"
           value={stats.allocatedBatchesCount}
           description="Harvest batches assigned"
+          variant="success"
         />
         <StatCard
           label="Total quantity"
           value={stats.totalAllocatedQuantity.toLocaleString()}
           description="Combined allocated volume"
+          variant="info"
         />
         <StatCard
           label="Events recorded"
           value={stats.eventsRecordedCount}
           description="Lifecycle milestones logged"
+          variant="neutral"
         />
       </div>
 

@@ -22,7 +22,7 @@ export const SUPPLY_CHAIN_OVERALL_RISK_LABELS: Record<
 
 export const SUPPLY_CHAIN_OVERALL_RISK_BADGE_VARIANT: Record<
   SupplyChainOverallRiskLevel,
-  "secondary" | "outline" | "destructive"
+  "success" | "warning" | "destructive" | "outline"
 > = {
   LOW: ASSESSMENT_RISK_BADGE_VARIANT.LOW,
   MEDIUM: ASSESSMENT_RISK_BADGE_VARIANT.MEDIUM,

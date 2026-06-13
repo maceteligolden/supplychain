@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter } from "next/font/google";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { JotaiProvider } from "@/components/providers/jotai-provider";
@@ -8,8 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-background text-foreground flex min-h-full flex-col">
         <TooltipProvider>
