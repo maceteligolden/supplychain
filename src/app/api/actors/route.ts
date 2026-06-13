@@ -5,10 +5,24 @@ import {
 } from "@/lib/validation/schemas/actor.schema";
 import { validate } from "@/lib/validation";
 import { createActor, getAllActors, isActorCodeTaken } from "@/mocks/data/actors";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { GetActorOutput, GetActorsOutput } from "@/types/actor.interface";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/actors" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to list actors" });
+    }
+  }
+
   return withMockDelay({
     handler: (): Response => {
       const items = getAllActors();
@@ -22,6 +36,14 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/actors" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to create actor" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
