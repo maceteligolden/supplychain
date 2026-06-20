@@ -22,13 +22,26 @@ type ApiErrorBodyInterface = {
 
 let refreshPromise: Promise<void> | null = null;
 
-function resolveUrl(path: string): string {
+async function resolveUrl(path: string): Promise<string> {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
   if (typeof window !== "undefined") {
     return path;
   }
+
+  try {
+    const { headers } = await import("next/headers");
+    const headersList = await headers();
+    const host = headersList.get("host");
+    if (host) {
+      const protocol = headersList.get("x-forwarded-proto") ?? "http";
+      return `${protocol}://${host}${path}`;
+    }
+  } catch {
+    // headers() is unavailable outside a request context — fall back to env.appUrl.
+  }
+
   return `${env.appUrl}${path}`;
 }
 
@@ -41,7 +54,7 @@ async function attemptTokenRefresh(
   }
 
   refreshPromise = (async (): Promise<void> => {
-    const response = await fetch(resolveUrl(API_ROUTES.auth.refresh), {
+    const response = await fetch(await resolveUrl(API_ROUTES.auth.refresh), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,7 +84,7 @@ async function attemptTokenRefresh(
  * Normalizes errors and logs failures — UI must use this instead of raw fetch.
  */
 export async function fetchJson<T>(input: FetchJsonInput): Promise<T> {
-  const url = resolveUrl(input.url);
+  const url = await resolveUrl(input.url);
   const cookieHeader =
     typeof window === "undefined" && input.options?.headers
       ? (input.options.headers as Record<string, string>)
@@ -117,10 +130,8 @@ export async function fetchJson<T>(input: FetchJsonInput): Promise<T> {
       try {
         await attemptTokenRefresh(cookieHeader);
         return executeFetch();
-      } catch (refreshError) {
-        if (isAppError(refreshError)) {
-          throw refreshError;
-        }
+      } catch {
+        throw error;
       }
     }
 

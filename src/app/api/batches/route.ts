@@ -12,7 +12,13 @@ import {
 import { getFarmBoundaryByFarmId } from "@/mocks/data/farm-boundaries";
 import { runFarmAssessment } from "@/mocks/data/farm-assessments";
 import { getFarmById } from "@/mocks/data/farms";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type {
   BatchCreationStepInterface,
   CreateBatchOutput,
@@ -20,6 +26,14 @@ import type {
 } from "@/types/batch.interface";
 
 export async function GET(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/batches" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to list batches" });
+    }
+  }
+
   return withMockDelay({
     handler: (): Response => {
       const { searchParams } = new URL(request.url);
@@ -47,6 +61,14 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/batches" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to create batch" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -104,7 +126,9 @@ export async function POST(request: Request): Promise<Response> {
               id: "run-assessment",
               label: "Deforestation assessment completed",
               status: "completed",
-              detail: `${assessment.analysis.deforestationPercent}% deforestation · ${assessment.riskLevel} risk`,
+              detail: assessment.analysis
+                ? `${assessment.analysis.deforestationPercent}% deforestation · ${assessment.riskLevel} risk`
+                : "Assessment pending",
             });
           } catch (error) {
             const message =

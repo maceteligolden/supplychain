@@ -74,6 +74,19 @@ async function readProxyRequestBody(request: Request): Promise<BodyInit | undefi
 }
 
 /**
+ * Builds the backend URL, forwarding query params from the incoming request.
+ */
+function buildTargetUrl(request: Request, targetPath: string): string {
+  const incomingSearch = new URL(request.url).search;
+
+  if (!incomingSearch || targetPath.includes("?")) {
+    return `${env.apiBaseUrl}${targetPath}`;
+  }
+
+  return `${env.apiBaseUrl}${targetPath}${incomingSearch}`;
+}
+
+/**
  * Proxies a Next.js API request to the real backend and forwards cookies.
  */
 export async function proxyRequest(input: ProxyRequestInput): Promise<Response> {
@@ -89,7 +102,7 @@ export async function proxyRequest(input: ProxyRequestInput): Promise<Response> 
     });
   }
 
-  const targetUrl = `${env.apiBaseUrl}${input.targetPath}`;
+  const targetUrl = buildTargetUrl(input.request, input.targetPath);
   const requestBody = await readProxyRequestBody(input.request);
 
   const backendResponse = await fetch(targetUrl, {

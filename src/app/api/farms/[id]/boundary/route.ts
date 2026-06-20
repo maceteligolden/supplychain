@@ -10,7 +10,13 @@ import {
   upsertFarmBoundary,
 } from "@/mocks/data/farm-boundaries";
 import { getFarmById } from "@/mocks/data/farms";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type {
   DeleteFarmBoundaryOutput,
   GetFarmBoundaryOutput,
@@ -20,7 +26,19 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/farms/${id}/boundary`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to get farm boundary" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -47,6 +65,18 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
 }
 
 export async function PUT(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/farms/${id}/boundary`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to save farm boundary" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -82,9 +112,24 @@ export async function PUT(request: Request, context: RouteContext): Promise<Resp
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: RouteContext,
 ): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/farms/${id}/boundary`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to delete farm boundary",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

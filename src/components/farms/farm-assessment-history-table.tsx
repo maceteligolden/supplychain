@@ -62,7 +62,8 @@ export function FarmAssessmentHistoryTable({
             <TableHead>Risk</TableHead>
             <TableHead className="text-right">Deforestation</TableHead>
             <TableHead className="text-right">Forest cover</TableHead>
-            <TableHead className="text-right">Protected overlap</TableHead>
+            <TableHead className="text-right">Afforestation</TableHead>
+            <TableHead className="text-right">WHISP risk</TableHead>
             <TableHead className="text-right">Area (ha)</TableHead>
           </TableRow>
         </TableHeader>
@@ -87,29 +88,45 @@ export function FarmAssessmentHistoryTable({
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm">
-                      {formatDateTime(assessment.assessedAt)}
+                      {formatDateTime(assessment.assessedAt ?? assessment.createdAt)}
                     </span>
                     {isLatest ? (
                       <span className="text-muted-foreground text-xs">Latest</span>
                     ) : null}
+                    {assessment.status === "PENDING" ||
+                    assessment.status === "RUNNING" ? (
+                      <span className="text-muted-foreground text-xs">Pending</span>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={ASSESSMENT_RISK_BADGE_VARIANT[assessment.riskLevel]}>
-                    {ASSESSMENT_RISK_LABELS[assessment.riskLevel]}
-                  </Badge>
+                  {assessment.riskLevel ? (
+                    <Badge
+                      variant={ASSESSMENT_RISK_BADGE_VARIANT[assessment.riskLevel]}
+                    >
+                      {ASSESSMENT_RISK_LABELS[assessment.riskLevel]}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Pending</Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {assessment.analysis.deforestationPercent}%
+                  {assessment.analysis?.deforestationPercent ?? "—"}
+                  {assessment.analysis ? "%" : ""}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {assessment.analysis.forestCoverPercent}%
+                  {assessment.analysis?.forestCoverPercent ?? "—"}
+                  {assessment.analysis ? "%" : ""}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {assessment.analysis.protectedAreaOverlapPercent}%
+                  {assessment.analysis?.afforestationPercent ?? "—"}
+                  {assessment.analysis ? "%" : ""}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {assessment.boundaryAreaHectares.toLocaleString()}
+                  {assessment.analysis?.whispRiskPcrop ?? "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {assessment.boundaryAreaHectares?.toLocaleString() ?? "—"}
                 </TableCell>
               </TableRow>
             );

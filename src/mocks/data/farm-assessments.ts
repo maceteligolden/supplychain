@@ -23,9 +23,12 @@ function buildSeedAssessments(): FarmAssessmentInterface[] {
     riskLevel: "MEDIUM",
     analysis: {
       deforestationPercent: 22,
+      afforestationPercent: 5,
+      stabilityPercent: 73,
       forestCoverPercent: 78,
       protectedAreaOverlapPercent: 8,
       protectedAreaDetected: true,
+      whispRiskPcrop: "Medium",
     },
   };
 
@@ -39,9 +42,12 @@ function buildSeedAssessments(): FarmAssessmentInterface[] {
     riskLevel: "MEDIUM",
     analysis: {
       deforestationPercent: 18,
+      afforestationPercent: 4,
+      stabilityPercent: 78,
       forestCoverPercent: 82,
       protectedAreaOverlapPercent: 6,
       protectedAreaDetected: true,
+      whispRiskPcrop: "Medium",
     },
   };
 
@@ -55,9 +61,12 @@ function buildSeedAssessments(): FarmAssessmentInterface[] {
     riskLevel: "LOW",
     analysis: {
       deforestationPercent: 10,
+      afforestationPercent: 2,
+      stabilityPercent: 88,
       forestCoverPercent: 90,
       protectedAreaOverlapPercent: 2,
       protectedAreaDetected: false,
+      whispRiskPcrop: "Low",
     },
   };
 
@@ -75,7 +84,9 @@ function generateId(): string {
 
 function sortNewestFirst(items: FarmAssessmentInterface[]): FarmAssessmentInterface[] {
   return [...items].sort(
-    (a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime(),
+    (a, b) =>
+      new Date(b.assessedAt ?? b.createdAt).getTime() -
+      new Date(a.assessedAt ?? a.createdAt).getTime(),
   );
 }
 

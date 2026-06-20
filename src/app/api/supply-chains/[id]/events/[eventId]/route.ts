@@ -8,7 +8,13 @@ import {
   getSupplyChainEventById,
   updateSupplyChainEvent,
 } from "@/mocks/data/supply-chain-events";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 
 type RouteContext = {
   params: Promise<{ id: string; eventId: string }>;
@@ -18,6 +24,21 @@ export async function PATCH(
   request: Request,
   context: RouteContext,
 ): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id, eventId } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/supply-chains/${id}/events/${eventId}`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to update supply chain event",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

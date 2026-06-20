@@ -32,3 +32,9 @@ export type DeleteFarmBoundaryOutput = {
   success: boolean;
   farmId: string;
 };
+
+export type GetFarmGeocodeOutput = {
+  latitude: number;
+  longitude: number;
+  displayName: string;
+};

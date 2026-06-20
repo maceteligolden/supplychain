@@ -1,5 +1,9 @@
 import { buildSupplyChainRiskSummary } from "@/lib/supply-chain/build-risk-summary";
 import {
+  ONGOING_CHAIN_DISPLAY_LIMIT,
+  RECENT_ACTIVITY_DISPLAY_LIMIT,
+} from "@/lib/dashboard/constants";
+import {
   getSupplyChainEventTypeOrder,
   SUPPLY_CHAIN_EVENT_TYPES,
   SUPPLY_CHAIN_EVENT_TYPE_LABELS,
@@ -22,8 +26,8 @@ import type { FarmInterface } from "@/types/farm.interface";
 import type { SupplyChainEventInterface } from "@/types/supply-chain-event.interface";
 import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
-const ONGOING_CHAIN_LIMIT = 5;
-const RECENT_ACTIVITY_LIMIT = 8;
+const ONGOING_CHAIN_LIMIT = ONGOING_CHAIN_DISPLAY_LIMIT;
+const RECENT_ACTIVITY_LIMIT = RECENT_ACTIVITY_DISPLAY_LIMIT;
 
 export type BuildDashboardSummaryInput = {
   farmsCount: number;

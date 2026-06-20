@@ -4,6 +4,7 @@ import { getAuthHeaders } from "@/services/auth-headers";
 import type {
   DeleteFarmBoundaryOutput,
   GetFarmBoundaryOutput,
+  GetFarmGeocodeOutput,
   UpsertFarmBoundaryInput,
   UpsertFarmBoundaryOutput,
 } from "@/types/farm-boundary.interface";
@@ -32,6 +33,18 @@ export async function upsertFarmBoundary(
     options: {
       method: "PUT",
       body: JSON.stringify(input),
+      headers: await getAuthHeaders(),
+    },
+  });
+}
+
+/** Geocodes the farm address for map centering. */
+export async function geocodeFarm(farmId: string): Promise<GetFarmGeocodeOutput> {
+  return fetchJson<GetFarmGeocodeOutput>({
+    url: API_ROUTES.farms.geocode(farmId),
+    options: {
+      method: "GET",
+      cache: "no-store",
       headers: await getAuthHeaders(),
     },
   });

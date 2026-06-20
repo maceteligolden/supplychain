@@ -9,7 +9,13 @@ import {
   getBatchAllocationById,
   updateBatchAllocation,
 } from "@/mocks/data/batch-allocations";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { DeleteBatchAllocationOutput } from "@/types/batch-allocation.interface";
 
 type RouteContext = {
@@ -20,6 +26,21 @@ export async function PATCH(
   request: Request,
   context: RouteContext,
 ): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/batch-allocations/${id}`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to update batch allocation",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -75,9 +96,24 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: RouteContext,
 ): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/batch-allocations/${id}`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to delete batch allocation",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

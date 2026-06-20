@@ -5,6 +5,7 @@ import { ActivityIcon } from "lucide-react";
 
 import { DashboardPanel } from "@/components/layout/dashboard-panel";
 import { supplyChainDetailPage } from "@/config/page-routes";
+import { RECENT_ACTIVITY_DISPLAY_LIMIT } from "@/lib/dashboard/constants";
 import type { DashboardRecentActivityInterface } from "@/types/dashboard.interface";
 
 export interface RecentActivityFeedProps {
@@ -30,17 +31,19 @@ function formatDateTime(iso: string): string {
 export function RecentActivityFeed({
   recentActivity,
 }: RecentActivityFeedProps): React.JSX.Element {
+  const visibleActivity = recentActivity.slice(0, RECENT_ACTIVITY_DISPLAY_LIMIT);
+
   return (
     <DashboardPanel
       accent="info"
       title="Recent activity"
       description="Latest lifecycle events recorded across all supply chains."
     >
-      {recentActivity.length === 0 ? (
+      {visibleActivity.length === 0 ? (
         <p className="text-text-secondary text-sm">No events recorded yet.</p>
       ) : (
         <ul className="gap-card flex flex-col">
-          {recentActivity.map((item) => (
+          {visibleActivity.map((item) => (
             <li
               key={item.id}
               className="border-border/60 bg-background/70 gap-tight rounded-control flex gap-3 border p-3"

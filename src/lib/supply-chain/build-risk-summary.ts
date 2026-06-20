@@ -49,7 +49,7 @@ function buildFarmRiskEntries(
         farmId,
         farmName: farm?.name ?? "Unknown farm",
         riskLevel: assessment?.riskLevel ?? null,
-        latestAssessedAt: assessment?.assessedAt,
+        latestAssessedAt: assessment?.assessedAt ?? undefined,
         analysis: assessment?.analysis ?? null,
         allocatedQuantity: totals.quantity,
         unit: totals.unit,

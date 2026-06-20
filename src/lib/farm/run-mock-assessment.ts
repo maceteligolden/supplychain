@@ -22,9 +22,13 @@ function centroidLatitude(boundary: FarmBoundaryInterface): number {
 function deriveRiskLevel(
   analysis: FarmAssessmentAnalysisInterface,
 ): AssessmentRiskLevel {
+  const whispRisk = analysis.whispRiskPcrop?.toLowerCase();
+
   if (
     analysis.protectedAreaOverlapPercent >= 15 ||
-    analysis.deforestationPercent >= 35
+    analysis.deforestationPercent >= 35 ||
+    whispRisk === "high" ||
+    whispRisk === "yes"
   ) {
     return "HIGH";
   }
@@ -32,7 +36,9 @@ function deriveRiskLevel(
   if (
     analysis.protectedAreaDetected ||
     analysis.deforestationPercent >= 12 ||
-    analysis.protectedAreaOverlapPercent >= 5
+    analysis.protectedAreaOverlapPercent >= 5 ||
+    whispRisk === "medium" ||
+    whispRisk === "moderate"
   ) {
     return "MEDIUM";
   }
@@ -52,19 +58,28 @@ function buildMockAnalysis(
     55,
     Math.round((deforestationBase % 28) + (lat > 10 ? 4 : 0)),
   );
+  const afforestationPercent = Math.min(15, hash % 9);
   const forestCoverPercent = Math.max(0, 100 - deforestationPercent);
+  const stabilityPercent = Math.max(
+    0,
+    100 - deforestationPercent - afforestationPercent,
+  );
 
   const protectedAreaOverlapPercent = Math.min(
     40,
     Math.round(((hash >> 3) % 20) + (lat > 6 && lat < 7 ? 8 : 0)),
   );
   const protectedAreaDetected = protectedAreaOverlapPercent >= 3;
+  const whispRiskLevels = ["Low", "Medium", "High"] as const;
 
   return {
     deforestationPercent,
+    afforestationPercent,
+    stabilityPercent,
     forestCoverPercent,
     protectedAreaOverlapPercent,
     protectedAreaDetected,
+    whispRiskPcrop: whispRiskLevels[hash % 3],
   };
 }
 

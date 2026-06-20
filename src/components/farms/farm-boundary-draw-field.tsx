@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { LatLngExpression } from "leaflet";
 
-import { FarmBoundaryMapLoader } from "@/components/farms/farm-boundary-map-loader";
+import { FarmUnifiedMapLoader } from "@/components/farms/farm-unified-map-loader";
 import { Button } from "@/components/ui/button";
 import { showErrorToast } from "@/lib/toast/notify";
 import type { GeoCoordinateInterface } from "@/types/farm-boundary.interface";
@@ -124,9 +124,9 @@ export function FarmBoundaryDrawField({
         </p>
       )}
       <div className="border-border h-64 overflow-hidden rounded-lg border">
-        <FarmBoundaryMapLoader
+        <FarmUnifiedMapLoader
           center={mapCenter}
-          coordinates={[]}
+          savedCoordinates={[]}
           draftCoordinates={isDrawing ? coordinates : []}
           isDrawing={isDrawing}
           isShapeClosed={isShapeClosed}

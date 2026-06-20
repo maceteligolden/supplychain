@@ -10,10 +10,24 @@ import {
   getAllFarms,
   isFarmCodeTaken,
 } from "@/mocks/data/farms";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { GetFarmsOutput } from "@/types/farm.interface";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/farms" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to list farms" });
+    }
+  }
+
   return withMockDelay({
     handler: (): Response => {
       const items = getAllFarms();
@@ -27,6 +41,14 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/farms" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to create farm" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

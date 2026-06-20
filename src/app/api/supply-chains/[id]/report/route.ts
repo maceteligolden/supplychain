@@ -8,7 +8,13 @@ import { getLatestFarmAssessment } from "@/mocks/data/farm-assessments";
 import { getFarmById } from "@/mocks/data/farms";
 import { getSupplyChainEventsByChainId } from "@/mocks/data/supply-chain-events";
 import { getSupplyChainById } from "@/mocks/data/supply-chains";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { BatchInterface } from "@/types/batch.interface";
 import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
 import type { FarmInterface } from "@/types/farm.interface";
@@ -18,7 +24,19 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/supply-chains/${id}/report`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to generate report" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

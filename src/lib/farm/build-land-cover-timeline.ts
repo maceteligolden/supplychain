@@ -41,10 +41,17 @@ export function buildLandCoverTimeline(input: {
   const baseline = buildMockBaselinePoints(input.farmId);
 
   const assessmentPoints: FarmLandCoverTimelinePointInterface[] = input.assessments
+    .filter(
+      (assessment) =>
+        assessment.assessedAt !== null &&
+        assessment.analysis !== null &&
+        assessment.status !== "PENDING" &&
+        assessment.status !== "RUNNING",
+    )
     .map((assessment) => ({
-      observedAt: assessment.assessedAt,
-      forestCoverPercent: assessment.analysis.forestCoverPercent,
-      deforestationPercent: assessment.analysis.deforestationPercent,
+      observedAt: assessment.assessedAt as string,
+      forestCoverPercent: assessment.analysis!.forestCoverPercent,
+      deforestationPercent: assessment.analysis!.deforestationPercent,
       source: "ASSESSMENT" as const,
       assessmentId: assessment.id,
     }))

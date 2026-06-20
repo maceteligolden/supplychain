@@ -6,7 +6,13 @@ import {
 import { validate } from "@/lib/validation";
 import { syncSupplyChainAllocations } from "@/mocks/data/batch-allocations";
 import { getSupplyChainById } from "@/mocks/data/supply-chains";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { SyncSupplyChainAllocationsOutput } from "@/types/supply-chain.interface";
 
 type RouteContext = {
@@ -14,6 +20,21 @@ type RouteContext = {
 };
 
 export async function PUT(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/supply-chains/${id}/allocations`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to sync supply chain allocations",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

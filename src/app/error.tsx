@@ -30,16 +30,14 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="en">
-      <body className="bg-background p-page flex min-h-screen items-center justify-center">
-        <div className="max-w-content gap-card flex flex-col items-center text-center">
-          <h1 className="text-foreground text-2xl font-bold">Application error</h1>
-          <p className="text-muted-foreground">
-            We could not complete your request. Please try again.
-          </p>
-          <Button onClick={reset}>Retry</Button>
-        </div>
-      </body>
-    </html>
+    <div className="p-page flex min-h-[50vh] items-center justify-center">
+      <div className="max-w-content gap-card flex flex-col items-center text-center">
+        <h1 className="text-foreground text-2xl font-bold">Application error</h1>
+        <p className="text-muted-foreground">
+          We could not complete your request. Please try again.
+        </p>
+        <Button onClick={reset}>Retry</Button>
+      </div>
+    </div>
   );
 }

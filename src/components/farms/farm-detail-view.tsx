@@ -231,7 +231,7 @@ export function FarmDetailView({
                     )}
                   </DetailField>
                   <DetailField label="Area">
-                    {farm.areaHectares !== undefined ? (
+                    {farm.areaHectares != null && Number.isFinite(farm.areaHectares) ? (
                       <span className="font-medium tabular-nums">
                         {farm.areaHectares.toLocaleString()}{" "}
                         <span className="text-muted-foreground font-normal">ha</span>

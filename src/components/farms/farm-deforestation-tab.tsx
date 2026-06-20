@@ -14,6 +14,7 @@ import {
   ASSESSMENT_RISK_LABELS,
 } from "@/config/farm-assessment-risk";
 import { isAppError } from "@/lib/errors";
+import { METRIC_VALUE_CLASSES } from "@/lib/farm/map-theme";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
 import { runFarmAssessment } from "@/services/farm-assessments.service";
 import type { FarmAssessmentInterface } from "@/types/farm-assessment.interface";
@@ -22,17 +23,17 @@ import type { FarmLandCoverTimelinePointInterface } from "@/types/farm-land-cove
 import type { FarmInterface } from "@/types/farm.interface";
 
 export interface FarmDeforestationTabProps {
-  /** Farm being assessed. */
   farm: FarmInterface;
-  /** Existing boundary, if mapped. */
   boundary: FarmBoundaryInterface | null;
-  /** Assessments for this farm, newest first. */
   assessments: FarmAssessmentInterface[];
-  /** Land-cover timeline points. */
   landCoverTimeline: FarmLandCoverTimelinePointInterface[];
 }
 
-function formatDateTime(iso: string): string {
+function formatDateTime(iso: string | null): string {
+  if (!iso) {
+    return "—";
+  }
+
   return new Date(iso).toLocaleString(undefined, {
     year: "numeric",
     month: "short",
@@ -42,11 +43,26 @@ function formatDateTime(iso: string): string {
   });
 }
 
-/**
- * FarmDeforestationTab
- *
- * Deforestation tab: boundary map, run assessment, land-cover chart, and history.
- */
+function isAssessmentComplete(
+  assessment: FarmAssessmentInterface,
+): assessment is FarmAssessmentInterface & {
+  riskLevel: NonNullable<FarmAssessmentInterface["riskLevel"]>;
+  analysis: NonNullable<FarmAssessmentInterface["analysis"]>;
+  assessedAt: string;
+  boundaryAreaHectares: number;
+} {
+  return (
+    assessment.status !== "PENDING" &&
+    assessment.status !== "RUNNING" &&
+    assessment.status !== "FAILED" &&
+    assessment.riskLevel !== null &&
+    assessment.analysis !== null &&
+    assessment.assessedAt !== null &&
+    assessment.boundaryAreaHectares !== null
+  );
+}
+
+/** Deforestation tab: unified map, assessment metrics, timeline, and history. */
 export function FarmDeforestationTab({
   farm,
   boundary,
@@ -66,10 +82,14 @@ export function FarmDeforestationTab({
   );
 
   const canRun = boundary !== null;
+  const selectedComplete =
+    selectedAssessment && isAssessmentComplete(selectedAssessment)
+      ? selectedAssessment
+      : null;
 
   async function handleRunAssessment(): Promise<void> {
     if (!canRun) {
-      showErrorToast("Draw and save a farm boundary before running an assessment.");
+      showErrorToast("Save a farm boundary before running an assessment.");
       return;
     }
 
@@ -78,7 +98,13 @@ export function FarmDeforestationTab({
     try {
       const assessment = await runFarmAssessment(farm.id);
       setSelectedAssessmentId(assessment.id);
-      showSuccessToast("Deforestation assessment completed.");
+
+      if (assessment.status === "FAILED") {
+        showErrorToast(assessment.errorMessage ?? "Assessment failed.");
+      } else {
+        showSuccessToast("Deforestation assessment completed.");
+      }
+
       router.refresh();
     } catch (err) {
       if (isAppError(err)) {
@@ -93,7 +119,13 @@ export function FarmDeforestationTab({
 
   return (
     <div className="gap-section flex flex-col">
-      <FarmBoundarySection farm={farm} boundary={boundary} />
+      <FarmBoundarySection
+        farm={farm}
+        boundary={boundary}
+        selectedAssessmentId={selectedComplete?.id ?? null}
+        selectedRiskLevel={selectedComplete?.riskLevel ?? null}
+        showAssessmentLayers={selectedComplete !== null}
+      />
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -102,7 +134,8 @@ export function FarmDeforestationTab({
               Deforestation assessment
             </h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Run mock satellite analysis and review historical results.
+              Run WHISP and GFW analysis against the saved boundary. Results appear on
+              the map above and in the chart below.
             </p>
           </div>
           <Button
@@ -116,63 +149,107 @@ export function FarmDeforestationTab({
         </div>
 
         {!canRun ? (
-          <p className="text-muted-foreground text-xs">
-            Map the farm boundary first — assessments require a saved polygon.
+          <p className="text-muted-foreground bg-accent/40 rounded-lg px-3 py-2 text-xs">
+            Save a farm boundary first — assessments require a polygon (draw,
+            coordinates, or GeoJSON).
           </p>
         ) : null}
 
-        {selectedAssessment ? (
-          <Card>
+        {isRunning ? (
+          <p className="text-muted-foreground text-xs">
+            Assessment in progress — external providers may take up to a minute.
+          </p>
+        ) : null}
+
+        {selectedAssessment && !selectedComplete ? (
+          <Card className="border-border/80 bg-surface-secondary/30">
+            <CardContent className="pt-6">
+              <p className="text-muted-foreground text-sm">
+                {selectedAssessment.status === "FAILED"
+                  ? (selectedAssessment.errorMessage ?? "Assessment failed.")
+                  : "Assessment pending — results will appear when processing completes."}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {selectedComplete ? (
+          <Card className="border-border/80 bg-surface-secondary/30 shadow-sm">
             <CardContent className="gap-card flex flex-col pt-6">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-foreground text-sm font-medium">
-                  {selectedAssessment.id === assessments[0]?.id
+                  {selectedComplete.id === assessments[0]?.id
                     ? "Latest result"
                     : "Selected assessment"}
                 </span>
                 <Badge
-                  variant={ASSESSMENT_RISK_BADGE_VARIANT[selectedAssessment.riskLevel]}
+                  variant={ASSESSMENT_RISK_BADGE_VARIANT[selectedComplete.riskLevel]}
                 >
-                  {ASSESSMENT_RISK_LABELS[selectedAssessment.riskLevel]}
+                  {ASSESSMENT_RISK_LABELS[selectedComplete.riskLevel]}
                 </Badge>
-                {selectedAssessment.analysis.protectedAreaDetected ? (
-                  <Badge variant="outline">Protected area detected</Badge>
-                ) : null}
                 <span className="text-muted-foreground text-xs">
-                  {formatDateTime(selectedAssessment.assessedAt)}
+                  {formatDateTime(selectedComplete.assessedAt)}
                 </span>
               </div>
-              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex flex-col gap-1">
+              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
                   <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Deforestation
                   </dt>
-                  <dd className="text-foreground text-sm font-medium tabular-nums">
-                    {selectedAssessment.analysis.deforestationPercent}%
+                  <dd
+                    className={`text-lg font-semibold tabular-nums ${METRIC_VALUE_CLASSES.deforestation}`}
+                  >
+                    {selectedComplete.analysis.deforestationPercent}%
                   </dd>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
+                  <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Afforestation
+                  </dt>
+                  <dd
+                    className={`text-lg font-semibold tabular-nums ${METRIC_VALUE_CLASSES.afforestation}`}
+                  >
+                    {selectedComplete.analysis.afforestationPercent}%
+                  </dd>
+                </div>
+                <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
+                  <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Stable cover
+                  </dt>
+                  <dd
+                    className={`text-lg font-semibold tabular-nums ${METRIC_VALUE_CLASSES.stability}`}
+                  >
+                    {selectedComplete.analysis.stabilityPercent}%
+                  </dd>
+                </div>
+                <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
                   <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Forest cover
                   </dt>
-                  <dd className="text-foreground text-sm font-medium tabular-nums">
-                    {selectedAssessment.analysis.forestCoverPercent}%
+                  <dd
+                    className={`text-lg font-semibold tabular-nums ${METRIC_VALUE_CLASSES.forestCover}`}
+                  >
+                    {selectedComplete.analysis.forestCoverPercent}%
                   </dd>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Protected overlap
-                  </dt>
-                  <dd className="text-foreground text-sm font-medium tabular-nums">
-                    {selectedAssessment.analysis.protectedAreaOverlapPercent}%
-                  </dd>
-                </div>
-                <div className="flex flex-col gap-1">
+                {selectedComplete.analysis.whispRiskPcrop ? (
+                  <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
+                    <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      WHISP cocoa risk
+                    </dt>
+                    <dd
+                      className={`text-lg font-semibold tabular-nums ${METRIC_VALUE_CLASSES.whisp}`}
+                    >
+                      {selectedComplete.analysis.whispRiskPcrop}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
                   <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Boundary area
                   </dt>
-                  <dd className="text-foreground text-sm font-medium tabular-nums">
-                    {selectedAssessment.boundaryAreaHectares.toLocaleString()} ha
+                  <dd className="text-foreground text-lg font-semibold tabular-nums">
+                    {selectedComplete.boundaryAreaHectares.toLocaleString()} ha
                   </dd>
                 </div>
               </dl>
@@ -192,7 +269,7 @@ export function FarmDeforestationTab({
             Assessment history
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Select a row to highlight it on the land-cover chart.
+            Select a row to update the map overlays and land-cover chart highlight.
           </p>
         </div>
         <FarmAssessmentHistoryTable

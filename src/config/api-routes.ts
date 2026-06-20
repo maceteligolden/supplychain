@@ -25,9 +25,12 @@ export const API_ROUTES = {
     list: "/api/farms",
     detail: (id: string): string => `/api/farms/${id}`,
     boundary: (id: string): string => `/api/farms/${id}/boundary`,
+    geocode: (id: string): string => `/api/farms/${id}/geocode`,
     assessments: (id: string): string => `/api/farms/${id}/assessments`,
     assessmentDetail: (id: string, assessmentId: string): string =>
       `/api/farms/${id}/assessments/${assessmentId}`,
+    assessmentMapContext: (id: string, assessmentId: string): string =>
+      `/api/farms/${id}/assessments/${assessmentId}/map-context`,
     landCoverTimeline: (id: string): string => `/api/farms/${id}/land-cover-timeline`,
   },
   supplyChains: {

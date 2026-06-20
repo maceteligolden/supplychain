@@ -9,7 +9,13 @@ import {
   getSupplyChainEventsByChainId,
 } from "@/mocks/data/supply-chain-events";
 import { getSupplyChainById } from "@/mocks/data/supply-chains";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { GetSupplyChainEventsOutput } from "@/types/supply-chain-event.interface";
 import type { SupplyChainEventType } from "@/config/supply-chain-event-types";
 
@@ -17,7 +23,22 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/supply-chains/${id}/events`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to list supply chain events",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -50,6 +71,21 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
 }
 
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/supply-chains/${id}/events`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to create supply chain event",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

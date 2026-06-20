@@ -9,10 +9,27 @@ import {
   getBatchAllocationsByFarmId,
   getBatchAllocationsBySupplyChainId,
 } from "@/mocks/data/batch-allocations";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { GetBatchAllocationsOutput } from "@/types/batch-allocation.interface";
 
 export async function GET(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/batch-allocations" });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to list batch allocations",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: (): Response => {
       const { searchParams } = new URL(request.url);
@@ -54,6 +71,17 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/batch-allocations" });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to create batch allocation",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

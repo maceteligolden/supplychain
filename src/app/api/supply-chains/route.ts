@@ -10,13 +10,27 @@ import {
   isSupplyChainCodeTaken,
 } from "@/mocks/data/supply-chains";
 import { syncSupplyChainAllocations } from "@/mocks/data/batch-allocations";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type {
   GetSupplyChainOutput,
   GetSupplyChainsOutput,
 } from "@/types/supply-chain.interface";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/supply-chains" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to list supply chains" });
+    }
+  }
+
   return withMockDelay({
     handler: (): Response => {
       const items = getAllSupplyChains();
@@ -30,6 +44,14 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      return await proxyRequest({ request, targetPath: "/api/v1/supply-chains" });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to create supply chain" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {

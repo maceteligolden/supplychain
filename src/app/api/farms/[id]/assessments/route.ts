@@ -5,14 +5,35 @@ import {
 } from "@/mocks/data/farm-assessments";
 import { getFarmBoundaryByFarmId } from "@/mocks/data/farm-boundaries";
 import { getFarmById } from "@/mocks/data/farms";
-import { errorResponse, jsonResponse, withMockDelay } from "@/lib/api/route-handler";
+import {
+  errorResponse,
+  jsonResponse,
+  proxyRequest,
+  withMockDelay,
+} from "@/lib/api/route-handler";
+import { env } from "@/config/env";
 import type { GetFarmAssessmentsOutput } from "@/types/farm-assessment.interface";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/farms/${id}/assessments`,
+      });
+    } catch (error) {
+      return errorResponse({
+        error,
+        fallbackMessage: "Failed to list farm assessments",
+      });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
@@ -44,10 +65,19 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
   });
 }
 
-export async function POST(
-  _request: Request,
-  context: RouteContext,
-): Promise<Response> {
+export async function POST(request: Request, context: RouteContext): Promise<Response> {
+  if (!env.useMockApi) {
+    try {
+      const { id } = await context.params;
+      return await proxyRequest({
+        request,
+        targetPath: `/api/v1/farms/${id}/assessments`,
+      });
+    } catch (error) {
+      return errorResponse({ error, fallbackMessage: "Failed to run farm assessment" });
+    }
+  }
+
   return withMockDelay({
     handler: async (): Promise<Response> => {
       try {
