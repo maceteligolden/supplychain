@@ -28,12 +28,13 @@ The repo includes [`netlify.toml`](../netlify.toml) with the **OpenNext** adapte
 
 In **Site configuration → Environment variables**, set:
 
-| Variable                   | Required             | Example                         | Notes                                                                                                   |
-| -------------------------- | -------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `SESSION_SECRET`           | **Yes** (production) | long random string (32+ chars)  | Signs session cookies. Never use the dev default in production.                                         |
-| `NEXT_PUBLIC_APP_URL`      | Recommended          | `https://your-site.netlify.app` | Used for server-side API calls. If omitted, Netlify’s `URL` / `DEPLOY_PRIME_URL` is used automatically. |
-| `NEXT_PUBLIC_USE_MOCK_API` | Optional             | `true`                          | Default in `netlify.toml`. Keep `true` for POC mock data.                                               |
-| `MOCK_DELAY_MS`            | Optional             | `200`                           | Simulated API latency.                                                                                  |
+| Variable                       | Required             | Example                         | Notes                                                                                                   |
+| ------------------------------ | -------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `SESSION_SECRET`               | **Yes** (production) | long random string (32+ chars)  | Signs session cookies. Never use the dev default in production.                                         |
+| `NEXT_PUBLIC_APP_URL`          | Recommended          | `https://your-site.netlify.app` | Used for server-side API calls. If omitted, Netlify’s `URL` / `DEPLOY_PRIME_URL` is used automatically. |
+| `NEXT_PUBLIC_USE_MOCK_API`     | Optional             | `true`                          | Default in `netlify.toml`. Keep `true` for POC mock data.                                               |
+| `NEXT_PUBLIC_MOCK_DELAY_MS`    | Optional             | `200`                           | Simulated API latency.                                                                                  |
+| `NEXT_PUBLIC_API_PROXY_TARGET` | When not using mocks | `https://your-api.example.com`  | Backend URL when `NEXT_PUBLIC_USE_MOCK_API=false`.                                                      |
 
 `HUSKY=0` is set in `netlify.toml` so Git hooks do not run during Netlify installs.
 
