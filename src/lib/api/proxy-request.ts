@@ -90,6 +90,25 @@ function buildTargetUrl(request: Request, targetPath: string): string {
  * Proxies a Next.js API request to the real backend and forwards cookies.
  */
 export async function proxyRequest(input: ProxyRequestInput): Promise<Response> {
+  // #region agent log
+  fetch("http://127.0.0.1:7635/ingest/f1cde6f2-f277-47a6-90de-e69cad7d975b", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "72dc51" },
+    body: JSON.stringify({
+      sessionId: "72dc51",
+      hypothesisId: "D-E",
+      location: "lib/api/proxy-request.ts:entry",
+      message: "proxyRequest invoked",
+      data: {
+        targetPath: input.targetPath,
+        method: input.request.method,
+        apiBaseUrlSet: Boolean(env.apiBaseUrl),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   if (!env.apiBaseUrl) {
     logger.warn("API proxy target is not configured", {
       namespace: "api",
@@ -105,11 +124,58 @@ export async function proxyRequest(input: ProxyRequestInput): Promise<Response> 
   const targetUrl = buildTargetUrl(input.request, input.targetPath);
   const requestBody = await readProxyRequestBody(input.request);
 
-  const backendResponse = await fetch(targetUrl, {
-    method: input.request.method,
-    headers: buildProxyHeaders(input.request),
-    body: requestBody,
-  });
+  let backendResponse: Response;
+  try {
+    backendResponse = await fetch(targetUrl, {
+      method: input.request.method,
+      headers: buildProxyHeaders(input.request),
+      body: requestBody,
+    });
+  } catch (fetchError) {
+    // #region agent log
+    let targetHost = "invalid-url";
+    try {
+      targetHost = new URL(targetUrl).host;
+    } catch {
+      // keep invalid-url
+    }
+    fetch("http://127.0.0.1:7635/ingest/f1cde6f2-f277-47a6-90de-e69cad7d975b", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "72dc51" },
+      body: JSON.stringify({
+        sessionId: "72dc51",
+        hypothesisId: "E",
+        location: "lib/api/proxy-request.ts:fetch-error",
+        message: "Backend fetch failed",
+        data: {
+          targetHost,
+          error: fetchError instanceof Error ? fetchError.message : "unknown",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    throw fetchError;
+  }
+
+  // #region agent log
+  fetch("http://127.0.0.1:7635/ingest/f1cde6f2-f277-47a6-90de-e69cad7d975b", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "72dc51" },
+    body: JSON.stringify({
+      sessionId: "72dc51",
+      hypothesisId: "E",
+      location: "lib/api/proxy-request.ts:fetch-ok",
+      message: "Backend fetch completed",
+      data: {
+        targetHost: new URL(targetUrl).host,
+        status: backendResponse.status,
+        ok: backendResponse.ok,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   const rawBody = await backendResponse.text();
   const responseHeaders = new Headers();

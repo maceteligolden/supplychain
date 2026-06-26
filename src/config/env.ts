@@ -90,3 +90,33 @@ export const env: EnvInterface = parseEnv({
   NEXT_PUBLIC_REFRESH_COOKIE_NAME: process.env.NEXT_PUBLIC_REFRESH_COOKIE_NAME,
   JWT_SECRET: process.env.JWT_SECRET,
 });
+
+// #region agent log
+if (typeof process !== "undefined") {
+  fetch("http://127.0.0.1:7635/ingest/f1cde6f2-f277-47a6-90de-e69cad7d975b", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "72dc51" },
+    body: JSON.stringify({
+      sessionId: "72dc51",
+      hypothesisId: "A-B-D",
+      location: "config/env.ts:module-load",
+      message: "Resolved env for BFF proxy",
+      data: {
+        useMockApi: env.useMockApi,
+        apiBaseUrlSet: Boolean(env.apiBaseUrl),
+        apiBaseUrlHost: env.apiBaseUrl ? new URL(env.apiBaseUrl).host : null,
+        rawUseMockApi: process.env.USE_MOCK_API ?? null,
+        rawNextPublicUseMockApi: process.env.NEXT_PUBLIC_USE_MOCK_API ?? null,
+        rawApiProxyTarget: process.env.API_PROXY_TARGET ? "[set]" : null,
+        rawNextPublicApiProxyTarget: process.env.NEXT_PUBLIC_API_PROXY_TARGET
+          ? "[set]"
+          : null,
+        netlify: process.env.NETLIFY ?? null,
+        context: process.env.CONTEXT ?? null,
+        nodeEnv: process.env.NODE_ENV ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
+// #endregion

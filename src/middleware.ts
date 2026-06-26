@@ -82,6 +82,28 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (!authenticated) {
     if (pathname.startsWith("/api/")) {
+      // #region agent log
+      fetch("http://127.0.0.1:7635/ingest/f1cde6f2-f277-47a6-90de-e69cad7d975b", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "72dc51" },
+        body: JSON.stringify({
+          sessionId: "72dc51",
+          hypothesisId: "C",
+          location: "middleware.ts:api-401",
+          message: "Middleware blocked API request",
+          data: {
+            pathname,
+            method: request.method,
+            useMockApi: env.useMockApi,
+            hasAccessCookie: Boolean(request.cookies.get(env.accessCookieName)?.value),
+            hasRefreshCookie: Boolean(
+              request.cookies.get(env.refreshCookieName)?.value,
+            ),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       return NextResponse.json(
         { code: "UNAUTHORIZED", message: "Not authenticated" },
         { status: 401 },
