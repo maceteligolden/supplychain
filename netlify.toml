@@ -6,7 +6,7 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
   HUSKY = "0"
   NEXT_PUBLIC_USE_MOCK_API = "true"
   MOCK_DELAY_MS = "200"
