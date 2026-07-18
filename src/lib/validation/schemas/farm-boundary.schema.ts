@@ -5,13 +5,24 @@ const coordinateSchema = Joi.object({
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
+const ringSchema = Joi.array().items(coordinateSchema).min(3).max(500);
+
 export const upsertFarmBoundarySchema = Joi.object({
-  coordinates: Joi.array().items(coordinateSchema).min(3).required(),
-});
+  coordinates: ringSchema.optional(),
+  plots: Joi.array().items(ringSchema).min(1).max(20).optional(),
+})
+  .or("coordinates", "plots")
+  .messages({
+    "object.missing": "Provide coordinates or plots for the farm boundary",
+  });
 
 export type UpsertFarmBoundarySchemaInput = {
-  coordinates: {
+  coordinates?: {
     latitude: number;
     longitude: number;
   }[];
+  plots?: {
+    latitude: number;
+    longitude: number;
+  }[][];
 };

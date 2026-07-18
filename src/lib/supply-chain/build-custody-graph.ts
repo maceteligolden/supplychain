@@ -1,6 +1,11 @@
 import { SUPPLY_CHAIN_EVENT_TYPE_LABELS } from "@/config/supply-chain-event-types";
 import { actorDetailPage, farmDetailPage } from "@/config/page-routes";
 import { formatFarmLocation } from "@/lib/farm/format-location";
+import {
+  CUSTODY_ROW_GAP,
+  estimateCustodyNodeHeight,
+  toCustodyFlowPosition,
+} from "@/lib/supply-chain/custody-graph-layout";
 import { getEventTimelineStepStates } from "@/lib/supply-chain-event/validate-event-sequence";
 import type { ActorInterface } from "@/types/actor.interface";
 import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
@@ -22,9 +27,6 @@ const COLUMN = {
   eventStart: 3,
 } as const;
 
-const COLUMN_WIDTH = 220;
-const ROW_HEIGHT = 120;
-
 export type BuildCustodyGraphInput = {
   supplyChain: SupplyChainInterface;
   commodity?: CommodityInterface;
@@ -34,13 +36,6 @@ export type BuildCustodyGraphInput = {
   events: SupplyChainEventInterface[];
   actors: ActorInterface[];
 };
-
-function toFlowPosition(column: number, row: number): { x: number; y: number } {
-  return {
-    x: column * COLUMN_WIDTH,
-    y: row * ROW_HEIGHT,
-  };
-}
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -62,12 +57,14 @@ export function buildCustodyGraph(
   const edges: TraceabilityGraphEdgeInterface[] = [];
 
   const chainNodeId = `chain-${input.supplyChain.id}`;
+  const chainLabel = input.supplyChain.name;
+  const chainSubtitle = input.commodity?.name ?? "Unknown commodity";
   nodes.push({
     id: chainNodeId,
     type: "chain",
-    label: input.supplyChain.name,
-    subtitle: input.commodity?.name ?? "Unknown commodity",
-    position: toFlowPosition(COLUMN.chain, 0),
+    label: chainLabel,
+    subtitle: chainSubtitle,
+    position: toCustodyFlowPosition(COLUMN.chain, 0),
     entityId: input.supplyChain.id,
   });
 
@@ -79,41 +76,53 @@ export function buildCustodyGraph(
     })
     .filter((row) => row.batch !== undefined);
 
+  const farmNodes: TraceabilityGraphNodeInterface[] = [];
   const farmRowById = new Map<string, number>();
-  let farmRow = 0;
+  let farmStackY = 0;
 
   for (const { farm } of allocationRows) {
     if (!farm || farmRowById.has(farm.id)) {
       continue;
     }
 
-    farmRowById.set(farm.id, farmRow);
-    nodes.push({
+    const label = farm.name;
+    const subtitle = formatFarmLocation(farm.location) || undefined;
+    const height = estimateCustodyNodeHeight({ label, subtitle });
+    farmRowById.set(farm.id, farmStackY);
+    farmNodes.push({
       id: `farm-${farm.id}`,
       type: "farm",
-      label: farm.name,
-      subtitle: formatFarmLocation(farm.location) || undefined,
-      position: toFlowPosition(COLUMN.farm, farmRow),
+      label,
+      subtitle,
+      position: toCustodyFlowPosition(COLUMN.farm, farmStackY),
       entityId: farm.id,
       href: farmDetailPage(farm.id),
     });
-    farmRow += 1;
+    farmStackY += height + CUSTODY_ROW_GAP;
   }
 
-  allocationRows.forEach(({ allocation, batch, farm }, index) => {
+  nodes.push(...farmNodes);
+
+  let batchStackY = 0;
+  allocationRows.forEach(({ allocation, batch, farm }) => {
     if (!batch) {
       return;
     }
 
     const batchNodeId = `batch-${batch.id}`;
+    const label = batch.batchNumber;
+    const subtitle = `${allocation.quantity.toLocaleString()} ${batch.unit}`;
+    const height = estimateCustodyNodeHeight({ label, subtitle });
+
     nodes.push({
       id: batchNodeId,
       type: "batch",
-      label: batch.batchNumber,
-      subtitle: `${allocation.quantity.toLocaleString()} ${batch.unit}`,
-      position: toFlowPosition(COLUMN.batch, index),
+      label,
+      subtitle,
+      position: toCustodyFlowPosition(COLUMN.batch, batchStackY),
       entityId: batch.id,
     });
+    batchStackY += height + CUSTODY_ROW_GAP;
 
     if (farm) {
       edges.push({
@@ -147,12 +156,15 @@ export function buildCustodyGraph(
       subtitleParts.push(formatEventDate(step.event.occurredAt));
     }
 
+    const label = SUPPLY_CHAIN_EVENT_TYPE_LABELS[step.type];
+    const subtitle = subtitleParts.length > 0 ? subtitleParts.join(" · ") : undefined;
+
     nodes.push({
       id: eventNodeId,
       type: "event",
-      label: SUPPLY_CHAIN_EVENT_TYPE_LABELS[step.type],
-      subtitle: subtitleParts.length > 0 ? subtitleParts.join(" · ") : undefined,
-      position: toFlowPosition(COLUMN.eventStart + index, 0),
+      label,
+      subtitle,
+      position: toCustodyFlowPosition(COLUMN.eventStart + index, 0),
       eventType: step.type,
       eventStatus: step.status,
       entityId: actor?.id,

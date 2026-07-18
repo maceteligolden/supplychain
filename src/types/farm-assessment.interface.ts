@@ -21,6 +21,8 @@ export interface FarmAssessmentAnalysisInterface {
 
 export type FarmAssessmentStatus = "PENDING" | "RUNNING" | "COMPLETE" | "FAILED";
 
+export type FarmAssessmentSource = "GFW_WDPA" | "WHISP_GFW_WDPA" | "FALLBACK";
+
 export interface FarmAssessmentInterface {
   /** Unique assessment identifier. */
   id: string;
@@ -36,6 +38,8 @@ export interface FarmAssessmentInterface {
   boundaryAreaHectares: number | null;
   /** Processing status for async assessments. */
   status?: FarmAssessmentStatus;
+  /** Data provenance: live providers vs deterministic demo fallback. */
+  source?: FarmAssessmentSource;
   /** Error message when status is FAILED. */
   errorMessage?: string;
   /** ISO timestamp when the record was created. */

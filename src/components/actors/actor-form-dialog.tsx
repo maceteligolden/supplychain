@@ -26,6 +26,7 @@ import {
   ACTOR_STATUSES,
   ACTOR_STATUS_LABELS,
   ACTOR_TYPES,
+  ACTOR_TYPE_DESCRIPTIONS,
   ACTOR_TYPE_LABELS,
   type ActorStatus,
   type ActorType,
@@ -198,6 +199,9 @@ export function ActorFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-muted-foreground text-xs">
+                  {ACTOR_TYPE_DESCRIPTIONS[type]}
+                </p>
               </div>
             </div>
           ) : null}

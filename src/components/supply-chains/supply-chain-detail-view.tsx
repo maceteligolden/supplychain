@@ -2,7 +2,12 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeftIcon, PencilIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  PackagePlusIcon,
+  PencilIcon,
+  RefreshCwIcon,
+} from "lucide-react";
 
 import { EventTimeline } from "@/components/supply-chain-events/event-timeline";
 import { SupplyChainRiskSummary } from "@/components/supply-chains/supply-chain-risk-summary";
@@ -23,6 +28,7 @@ import {
 import { PAGE_ROUTES } from "@/config/page-routes";
 import { SUPPLY_CHAIN_STATUS_LABELS } from "@/config/supply-chain-status";
 import { buildCustodyGraph } from "@/lib/supply-chain/build-custody-graph";
+import { getRunAssessmentsLabel } from "@/lib/supply-chain/get-run-assessments-label";
 import { getSupplyChainStats } from "@/lib/supply-chain/supply-chain-stats";
 import type { ActorInterface } from "@/types/actor.interface";
 import type { BatchAllocationInterface } from "@/types/batch-allocation.interface";
@@ -52,6 +58,14 @@ export interface SupplyChainDetailViewProps {
   riskSummary: SupplyChainRiskSummaryInterface;
   /** Opens the edit wizard. */
   onEdit: () => void;
+  /** Opens the allocation-focused wizard. */
+  onAllocateMore: () => void;
+  /** Runs or reruns deforestation assessments for all linked farms. */
+  onRunAssessments: () => void;
+  /** True while chain-level assessments are in progress. */
+  isRunningAssessments?: boolean;
+  /** Progress label while assessments run. */
+  assessmentProgress?: string;
 }
 
 /**
@@ -69,6 +83,10 @@ export function SupplyChainDetailView({
   actors,
   riskSummary,
   onEdit,
+  onAllocateMore,
+  onRunAssessments,
+  isRunningAssessments = false,
+  assessmentProgress,
 }: SupplyChainDetailViewProps): React.JSX.Element {
   const stats = getSupplyChainStats({ allocations, batches, farms, events });
 
@@ -172,10 +190,38 @@ export function SupplyChainDetailView({
 
       <Card>
         <CardContent className="pt-6">
-          <h3 className="text-foreground mb-4 text-lg font-semibold">Allocations</h3>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-foreground text-lg font-semibold">Allocations</h3>
+              {assessmentProgress ? (
+                <p className="text-muted-foreground mt-1 text-sm" aria-live="polite">
+                  {assessmentProgress}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRunAssessments}
+                disabled={isRunningAssessments || riskSummary.linkedFarmsCount === 0}
+              >
+                <RefreshCwIcon
+                  className={`size-4 ${isRunningAssessments ? "animate-spin" : ""}`}
+                />
+                {isRunningAssessments
+                  ? "Running…"
+                  : getRunAssessmentsLabel(riskSummary)}
+              </Button>
+              <Button variant="outline" size="sm" onClick={onAllocateMore}>
+                <PackagePlusIcon className="size-4" />
+                Allocate more
+              </Button>
+            </div>
+          </div>
           {allocationRows.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              No batches allocated yet. Edit this supply chain to assign produce.
+              No batches allocated yet. Use Allocate more to assign produce from farms.
             </p>
           ) : (
             <Table>

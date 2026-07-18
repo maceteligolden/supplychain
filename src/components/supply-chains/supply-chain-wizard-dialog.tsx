@@ -30,7 +30,10 @@ import {
   type SupplyChainStatus,
 } from "@/config/supply-chain-status";
 import { supplyChainDetailPage } from "@/config/page-routes";
-import { getBatchMaxAllocation } from "@/lib/supply-chain/supply-chain-stats";
+import {
+  getAllocationQuantityFeedback,
+  getBatchMaxAllocation,
+} from "@/lib/supply-chain/supply-chain-stats";
 import { formatFarmLocation } from "@/lib/farm/format-location";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
@@ -47,6 +50,8 @@ import type { SupplyChainInterface } from "@/types/supply-chain.interface";
 
 const WIZARD_STEPS = ["Select farms", "Allocate batches", "Chain details"] as const;
 
+export type SupplyChainWizardMode = "full" | "allocate";
+
 export interface SupplyChainWizardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -55,6 +60,8 @@ export interface SupplyChainWizardDialogProps {
   batchesByFarmId: Record<string, BatchInterface[]>;
   allAllocations: BatchAllocationInterface[];
   supplyChain?: SupplyChainInterface;
+  /** Full wizard (default) or allocation-focused flow that starts on farm selection. */
+  mode?: SupplyChainWizardMode;
 }
 
 type AllocationDraft = Record<string, string>;
@@ -63,7 +70,7 @@ type AllocationDraft = Record<string, string>;
  * SupplyChainWizardDialog
  *
  * Three-step wizard for creating or editing a supply chain with farm selection,
- * batch allocation, and chain metadata.
+ * batch allocation, and chain metadata. Supports an allocate-only entry mode.
  */
 export function SupplyChainWizardDialog({
   open,
@@ -73,9 +80,11 @@ export function SupplyChainWizardDialog({
   batchesByFarmId,
   allAllocations,
   supplyChain,
+  mode = "full",
 }: SupplyChainWizardDialogProps): React.JSX.Element {
   const router = useRouter();
   const isEdit = Boolean(supplyChain);
+  const isAllocateMode = mode === "allocate" && isEdit;
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const initialCommodityId = useMemo(() => {
@@ -129,7 +138,7 @@ export function SupplyChainWizardDialog({
     return draft;
   }, [supplyChain, allAllocations]);
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(isAllocateMode ? 0 : 0);
   const [commodityId, setCommodityId] = useState(initialCommodityId);
   const [selectedFarmIds, setSelectedFarmIds] = useState<string[]>(initialFarmIds);
   const [allocationDraft, setAllocationDraft] =
@@ -149,6 +158,38 @@ export function SupplyChainWizardDialog({
   const commodityFarms = useMemo(
     () => farms.filter((farm) => farm.commodityIds.includes(commodityId)),
     [farms, commodityId],
+  );
+
+  const selectedCommodity = commodities.find((item) => item.id === commodityId);
+
+  const allocationFeedbackByBatchId = useMemo(() => {
+    const feedback: Record<
+      string,
+      ReturnType<typeof getAllocationQuantityFeedback>
+    > = {};
+
+    for (const farm of selectedFarms) {
+      for (const batch of batchesByFarmId[farm.id] ?? []) {
+        const maxQty = getBatchMaxAllocation(batch, allAllocations, supplyChain?.id);
+        feedback[batch.id] = getAllocationQuantityFeedback({
+          draftValue: allocationDraft[batch.id],
+          maxQuantity: maxQty,
+          unit: batch.unit,
+        });
+      }
+    }
+
+    return feedback;
+  }, [
+    selectedFarms,
+    batchesByFarmId,
+    allAllocations,
+    supplyChain?.id,
+    allocationDraft,
+  ]);
+
+  const hasInvalidAllocation = Object.values(allocationFeedbackByBatchId).some(
+    (feedback) => !feedback.isValid,
   );
 
   function resetWizardState(): void {
@@ -199,12 +240,20 @@ export function SupplyChainWizardDialog({
       return selectedFarmIds.length > 0;
     }
     if (currentStep === 1) {
-      return Object.values(allocationDraft).some((value) => Number(value) > 0);
+      const hasPositive = Object.values(allocationDraft).some(
+        (value) => Number(value) > 0,
+      );
+      return hasPositive && !hasInvalidAllocation;
     }
     return name.trim().length >= 2;
   }
 
   async function handleSubmit(): Promise<void> {
+    if (hasInvalidAllocation) {
+      showErrorToast("Fix allocation quantities that exceed the available maximum.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const allocations = Object.entries(allocationDraft)
@@ -223,9 +272,16 @@ export function SupplyChainWizardDialog({
 
     try {
       if (isEdit && supplyChain) {
-        await updateSupplyChain(supplyChain.id, metadata);
+        await updateSupplyChain(
+          supplyChain.id,
+          isAllocateMode ? { commodityId } : metadata,
+        );
         await syncSupplyChainAllocations(supplyChain.id, { allocations });
-        showSuccessToast(`"${name}" updated successfully.`);
+        showSuccessToast(
+          isAllocateMode
+            ? `Allocations for "${supplyChain.name}" updated.`
+            : `"${name}" updated successfully.`,
+        );
         onOpenChange(false);
         router.refresh();
         router.push(supplyChainDetailPage(supplyChain.id));
@@ -250,20 +306,29 @@ export function SupplyChainWizardDialog({
     }
   }
 
+  const dialogTitle = isAllocateMode
+    ? "Allocate more"
+    : isEdit
+      ? "Edit supply chain"
+      : "Create supply chain";
+
+  const lastStepIndex = isAllocateMode ? 1 : WIZARD_STEPS.length - 1;
+  const visibleSteps = isAllocateMode ? WIZARD_STEPS.slice(0, 2) : WIZARD_STEPS;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Edit supply chain" : "Create supply chain"}
-          </DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Step {step + 1} of {WIZARD_STEPS.length}: {WIZARD_STEPS[step]}
+            {isAllocateMode
+              ? `Step ${step + 1} of ${visibleSteps.length}: ${visibleSteps[step]}`
+              : `Step ${step + 1} of ${WIZARD_STEPS.length}: ${WIZARD_STEPS[step]}`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2">
-          {WIZARD_STEPS.map((label, index) => (
+          {visibleSteps.map((label, index) => (
             <div
               key={label}
               className={cn(
@@ -289,7 +354,9 @@ export function SupplyChainWizardDialog({
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select commodity" />
+                    <SelectValue placeholder="Select commodity">
+                      {selectedCommodity?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {commodities.map((commodity) => (
@@ -299,6 +366,14 @@ export function SupplyChainWizardDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedCommodity ? (
+                  <p className="text-muted-foreground text-sm">
+                    Selected commodity:{" "}
+                    <span className="text-foreground font-medium">
+                      {selectedCommodity.name}
+                    </span>
+                  </p>
+                ) : null}
               </div>
 
               <div className="gap-card flex flex-col">
@@ -386,20 +461,26 @@ export function SupplyChainWizardDialog({
                             allAllocations,
                             supplyChain?.id,
                           );
+                          const feedback = allocationFeedbackByBatchId[batch.id];
+                          const inputId = `qty-${batch.id}`;
+                          const feedbackId = `${inputId}-feedback`;
+
                           return (
                             <div key={batch.id} className="gap-card flex flex-col">
-                              <Label htmlFor={`qty-${batch.id}`}>
+                              <Label htmlFor={inputId}>
                                 {batch.batchNumber} — max {maxQty.toLocaleString()}{" "}
                                 {batch.unit}
                               </Label>
                               <Input
-                                id={`qty-${batch.id}`}
+                                id={inputId}
                                 type="number"
                                 min={0}
                                 max={maxQty}
                                 step="any"
                                 value={allocationDraft[batch.id] ?? ""}
                                 placeholder="0 to skip"
+                                aria-invalid={feedback ? !feedback.isValid : undefined}
+                                aria-describedby={feedbackId}
                                 onChange={(event): void =>
                                   setAllocationDraft((current) => ({
                                     ...current,
@@ -407,7 +488,36 @@ export function SupplyChainWizardDialog({
                                   }))
                                 }
                                 disabled={isSubmitting || maxQty <= 0}
+                                className={cn(
+                                  feedback?.isExceeded &&
+                                    "border-destructive focus-visible:border-destructive",
+                                  feedback &&
+                                    feedback.isValid &&
+                                    !feedback.isEmpty &&
+                                    Number(allocationDraft[batch.id]) > 0 &&
+                                    "border-emerald-600 focus-visible:border-emerald-600",
+                                )}
                               />
+                              {feedback ? (
+                                <p
+                                  id={feedbackId}
+                                  className={cn(
+                                    "text-sm",
+                                    feedback.isExceeded || !feedback.isValid
+                                      ? "text-destructive"
+                                      : feedback.isEmpty
+                                        ? "text-muted-foreground"
+                                        : "text-emerald-700 dark:text-emerald-400",
+                                  )}
+                                  role={
+                                    feedback.isExceeded || !feedback.isValid
+                                      ? "alert"
+                                      : undefined
+                                  }
+                                >
+                                  {feedback.message}
+                                </p>
+                              ) : null}
                             </div>
                           );
                         })
@@ -419,7 +529,7 @@ export function SupplyChainWizardDialog({
             </div>
           ) : null}
 
-          {step === 2 ? (
+          {step === 2 && !isAllocateMode ? (
             <div className="gap-section flex flex-col">
               <div className="gap-card flex flex-col">
                 <Label htmlFor="chain-name">Name</Label>
@@ -437,6 +547,12 @@ export function SupplyChainWizardDialog({
                   <code className="text-sm">{supplyChain.code}</code>
                 </div>
               ) : null}
+              <div className="gap-card flex flex-col">
+                <Label>Commodity</Label>
+                <p className="text-foreground text-sm font-medium">
+                  {selectedCommodity?.name ?? "Unknown commodity"}
+                </p>
+              </div>
               <div className="gap-card flex flex-col">
                 <Label htmlFor="chain-description">Description (optional)</Label>
                 <Input
@@ -458,7 +574,7 @@ export function SupplyChainWizardDialog({
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>{SUPPLY_CHAIN_STATUS_LABELS[status]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {SUPPLY_CHAIN_STATUSES.map((option) => (
@@ -491,7 +607,7 @@ export function SupplyChainWizardDialog({
             >
               Cancel
             </Button>
-            {step < WIZARD_STEPS.length - 1 ? (
+            {step < lastStepIndex ? (
               <Button
                 type="button"
                 disabled={isSubmitting || !canProceedFromStep(step)}
@@ -507,9 +623,11 @@ export function SupplyChainWizardDialog({
               >
                 {isSubmitting
                   ? "Saving…"
-                  : isEdit
-                    ? "Save changes"
-                    : "Create supply chain"}
+                  : isAllocateMode
+                    ? "Save allocations"
+                    : isEdit
+                      ? "Save changes"
+                      : "Create supply chain"}
               </Button>
             )}
           </div>

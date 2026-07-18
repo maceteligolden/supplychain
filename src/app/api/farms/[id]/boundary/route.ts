@@ -98,7 +98,16 @@ export async function PUT(request: Request, context: RouteContext): Promise<Resp
           label: "farm boundary",
         });
 
-        const boundary = upsertFarmBoundary(id, input.coordinates);
+        const coordinates = input.coordinates ?? input.plots?.[0];
+        if (!coordinates || coordinates.length < 3) {
+          throw createAppError({
+            code: "VALIDATION_ERROR",
+            message: "Provide coordinates or plots for the farm boundary",
+            statusCode: 400,
+          });
+        }
+
+        const boundary = upsertFarmBoundary(id, coordinates);
 
         return jsonResponse({ data: boundary });
       } catch (error) {

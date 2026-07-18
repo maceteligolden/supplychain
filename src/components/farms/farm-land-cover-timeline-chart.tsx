@@ -72,8 +72,8 @@ export function FarmLandCoverTimelineChart({
       <CardHeader>
         <CardTitle>Land-cover timeline</CardTitle>
         <CardDescription>
-          Mock satellite baseline (2020–2024) plus assessment snapshots. Solid markers
-          indicate assessment runs.
+          Baseline land-cover series plus assessment snapshots. Solid markers indicate
+          assessment runs.
         </CardDescription>
       </CardHeader>
       <CardContent>

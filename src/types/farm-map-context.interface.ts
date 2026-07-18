@@ -22,6 +22,7 @@ export interface FarmNearestProtectedAreaInterface {
 
 export interface FarmAssessmentMapContextInterface {
   boundary: GeoCoordinateInterface[];
+  plots?: GeoCoordinateInterface[][];
   bbox: [number, number, number, number];
   legend: FarmMapLegendItemInterface[];
   tileLayers: FarmMapTileLayerInterface[];
@@ -32,3 +33,6 @@ export interface FarmAssessmentMapContextInterface {
 }
 
 export type GetFarmAssessmentMapContextOutput = FarmAssessmentMapContextInterface;
+
+/** Map view modes after a completed assessment. */
+export type FarmAssessmentMapMode = "satellite" | "risk";

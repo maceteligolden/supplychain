@@ -12,6 +12,10 @@ export const API_ROUTES = {
   dashboard: {
     summary: "/api/dashboard/summary",
   },
+  geocode: {
+    query: (q: string, limit = 5): string =>
+      `/api/geocode?q=${encodeURIComponent(q)}&limit=${limit}`,
+  },
   commodities: {
     list: "/api/commodities",
     detail: (id: string): string => `/api/commodities/${id}`,

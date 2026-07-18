@@ -44,7 +44,35 @@ export function validateEventSequence(
   return { valid: true };
 }
 
-/** Returns event types that may be added next for a supply chain. */
+/**
+ * Returns the single next lifecycle event type in order, or undefined when the
+ * chain has already recorded DELIVERED (or otherwise completed the sequence).
+ */
+export function getImmediateNextEventType(
+  existingEvents: SupplyChainEventInterface[],
+): SupplyChainEventType | undefined {
+  const maxExistingOrder = existingEvents.reduce((max, event) => {
+    const order = getSupplyChainEventTypeOrder(event.type);
+    return order > max ? order : max;
+  }, -1);
+
+  const nextOrder = maxExistingOrder + 1;
+  if (nextOrder < 0 || nextOrder >= SUPPLY_CHAIN_EVENT_TYPES.length) {
+    return undefined;
+  }
+
+  const nextType = SUPPLY_CHAIN_EVENT_TYPES[nextOrder];
+  if (existingEvents.some((event) => event.type === nextType)) {
+    return undefined;
+  }
+
+  return nextType;
+}
+
+/**
+ * Returns all forward-allowed event types after the latest recorded step.
+ * Choosing a type beyond the immediate next skips intermediate milestones.
+ */
 export function getAllowedNextEventTypes(
   existingEvents: SupplyChainEventInterface[],
 ): SupplyChainEventType[] {

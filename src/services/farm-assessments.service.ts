@@ -12,11 +12,18 @@ import type { GetFarmAssessmentMapContextOutput } from "@/types/farm-map-context
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 60;
+const RUN_RETRY_ATTEMPTS = 3;
 
 const TERMINAL_STATUSES: FarmAssessmentStatus[] = ["COMPLETE", "FAILED"];
 
 function isPendingStatus(status: FarmAssessmentStatus | undefined): boolean {
   return status === "PENDING" || status === "RUNNING";
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /** Returns all assessments for a farm, newest first. */
@@ -63,12 +70,6 @@ export async function getFarmAssessmentMapContext(
   });
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 /** Polls until assessment reaches COMPLETE or FAILED. */
 export async function pollAssessmentUntilComplete(
   farmId: string,
@@ -87,10 +88,7 @@ export async function pollAssessmentUntilComplete(
   return getFarmAssessmentById(farmId, assessmentId);
 }
 
-/** Runs a deforestation assessment; polls when the backend accepts async processing. */
-export async function runFarmAssessment(
-  farmId: string,
-): Promise<RunFarmAssessmentOutput> {
+async function runAssessmentOnce(farmId: string): Promise<RunFarmAssessmentOutput> {
   const assessment = await fetchJson<RunFarmAssessmentOutput>({
     url: API_ROUTES.farms.assessments(farmId),
     options: {
@@ -104,4 +102,39 @@ export async function runFarmAssessment(
   }
 
   return assessment;
+}
+
+/**
+ * Runs a deforestation assessment with up to 3 attempts.
+ * On terminal FAILED after retries, returns the last failed assessment
+ * so callers can keep showing the previous COMPLETE result.
+ */
+export async function runFarmAssessment(
+  farmId: string,
+): Promise<RunFarmAssessmentOutput> {
+  let lastResult: RunFarmAssessmentOutput | null = null;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= RUN_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      const assessment = await runAssessmentOnce(farmId);
+      lastResult = assessment;
+
+      if (assessment.status !== "FAILED") {
+        return assessment;
+      }
+
+      lastError = new Error(assessment.errorMessage ?? "Assessment failed");
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastResult) {
+    return lastResult;
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Failed to run assessment. Please try again.");
 }

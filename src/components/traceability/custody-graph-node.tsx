@@ -5,6 +5,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { Building2Icon, PackageIcon, RouteIcon, SproutIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { CUSTODY_NODE_WIDTH } from "@/lib/supply-chain/custody-graph-layout";
 import { cn } from "@/lib/utils";
 import type {
   TraceabilityGraphEventStatus,
@@ -54,6 +55,7 @@ function getEventStatusClassName(
  *
  * Custom React Flow node for chain-of-custody graph entities
  * (farm, batch, supply chain hub, lifecycle event).
+ * Text wraps inside a fixed width so boxes grow vertically without overlapping.
  */
 export function CustodyGraphNode({
   data,
@@ -65,9 +67,10 @@ export function CustodyGraphNode({
   const content = (
     <div
       className={cn(
-        "w-48 rounded-lg border p-3 shadow-sm",
+        "box-border rounded-lg border p-3 shadow-sm",
         isEvent ? getEventStatusClassName(node.eventStatus) : "border-border bg-card",
       )}
+      style={{ width: CUSTODY_NODE_WIDTH }}
     >
       <div className="mb-2 flex items-center gap-2">
         <Icon className="text-muted-foreground size-4 shrink-0" />
@@ -75,9 +78,11 @@ export function CustodyGraphNode({
           {NODE_TYPE_LABELS[node.type]}
         </Badge>
       </div>
-      <p className="text-foreground text-sm leading-snug font-medium">{node.label}</p>
+      <p className="text-foreground text-sm leading-snug font-medium break-words whitespace-normal">
+        {node.label}
+      </p>
       {node.subtitle ? (
-        <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+        <p className="text-muted-foreground mt-1 text-xs leading-relaxed break-words whitespace-normal">
           {node.subtitle}
         </p>
       ) : null}

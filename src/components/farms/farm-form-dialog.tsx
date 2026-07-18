@@ -2,10 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { LatLngExpression } from "leaflet";
 import { CheckIcon } from "lucide-react";
 
-import { FarmBoundaryDrawField } from "@/components/farms/farm-boundary-draw-field";
+import {
+  FarmBoundaryInputField,
+  resolveBoundaryCoordinates,
+  type BoundaryInputMode,
+} from "@/components/farms/farm-boundary-input-field";
+import { NIGERIA_DEFAULT_CENTER, type FarmMapCenter } from "@/lib/farm/map-types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,7 +38,7 @@ import { createEmptyFarmOwner } from "@/lib/farm/empty-owner";
 import { cn } from "@/lib/utils";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
-import { upsertFarmBoundary } from "@/services/farm-boundaries.service";
+import { geocodeQuery, upsertFarmBoundary } from "@/services/farm-boundaries.service";
 import { createFarm, updateFarm } from "@/services/farms.service";
 import type { CommodityInterface } from "@/types/commodity.interface";
 import type { GeoCoordinateInterface } from "@/types/farm-boundary.interface";
@@ -113,6 +117,10 @@ export function FarmFormDialog({
     GeoCoordinateInterface[]
   >([]);
   const [boundaryShapeClosed, setBoundaryShapeClosed] = useState(false);
+  const [boundaryInputMode, setBoundaryInputMode] = useState<BoundaryInputMode>("draw");
+  const [isBoundaryEditing, setIsBoundaryEditing] = useState(false);
+  const [flyToCenter, setFlyToCenter] = useState<FarmMapCenter | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [annualProduction, setAnnualProduction] = useState(
     farm?.annualProductionEstimateKg !== undefined
       ? String(farm.annualProductionEstimateKg)
@@ -124,13 +132,18 @@ export function FarmFormDialog({
   const [status, setStatus] = useState<FarmStatus>(farm?.status ?? "DRAFT");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const boundaryMapCenter = useMemo((): LatLngExpression | undefined => {
+  const boundaryMapCenter = useMemo((): FarmMapCenter => {
     const parsedLatitude = latitude.trim() ? Number(latitude) : undefined;
     const parsedLongitude = longitude.trim() ? Number(longitude) : undefined;
-    if (parsedLatitude !== undefined && parsedLongitude !== undefined) {
+    if (
+      parsedLatitude !== undefined &&
+      parsedLongitude !== undefined &&
+      Number.isFinite(parsedLatitude) &&
+      Number.isFinite(parsedLongitude)
+    ) {
       return [parsedLatitude, parsedLongitude];
     }
-    return undefined;
+    return NIGERIA_DEFAULT_CENTER;
   }, [latitude, longitude]);
 
   function resetWizardState(): void {
@@ -152,6 +165,9 @@ export function FarmFormDialog({
     );
     setBoundaryCoordinates([]);
     setBoundaryShapeClosed(false);
+    setBoundaryInputMode("draw");
+    setIsBoundaryEditing(false);
+    setFlyToCenter(null);
     setAnnualProduction(
       farm?.annualProductionEstimateKg !== undefined
         ? String(farm.annualProductionEstimateKg)
@@ -217,6 +233,9 @@ export function FarmFormDialog({
     if (kind === "boundary") {
       setBoundaryCoordinates([]);
       setBoundaryShapeClosed(false);
+      setBoundaryInputMode("draw");
+      setIsBoundaryEditing(false);
+      setFlyToCenter(null);
     }
 
     if (kind === "compliance") {
@@ -284,7 +303,14 @@ export function FarmFormDialog({
         });
 
         if (boundaryShapeClosed && boundaryCoordinates.length >= 3) {
-          await upsertFarmBoundary(created.id, { coordinates: boundaryCoordinates });
+          const resolvedBoundary = resolveBoundaryCoordinates({
+            inputMode: boundaryInputMode,
+            coordinates: boundaryCoordinates,
+            isShapeClosed: boundaryShapeClosed,
+          });
+          if (resolvedBoundary) {
+            await upsertFarmBoundary(created.id, { plots: [resolvedBoundary] });
+          }
         }
 
         showSuccessToast(`"${name}" created successfully.`);
@@ -493,16 +519,84 @@ export function FarmFormDialog({
           {stepKind === "boundary" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
-                Optional — draw the farm boundary on the map or skip and map it later on
-                the farm detail page.
+                Optional — quick map here, or skip and finish mapping on the farm
+                Deforestation tab (full-screen locate + draw).
               </p>
-              <FarmBoundaryDrawField
+              <FarmBoundaryInputField
                 center={boundaryMapCenter}
+                inputMode={boundaryInputMode}
+                onInputModeChange={setBoundaryInputMode}
+                isEditing={isBoundaryEditing}
                 coordinates={boundaryCoordinates}
                 onCoordinatesChange={setBoundaryCoordinates}
                 isShapeClosed={boundaryShapeClosed}
                 onShapeClosedChange={setBoundaryShapeClosed}
+                onStartEditing={(mode): void => {
+                  setBoundaryInputMode(mode);
+                  setIsBoundaryEditing(true);
+                  if (mode === "draw") {
+                    setBoundaryCoordinates([]);
+                    setBoundaryShapeClosed(false);
+                  }
+                }}
+                onCancelEditing={(): void => {
+                  setIsBoundaryEditing(false);
+                  setBoundaryCoordinates([]);
+                  setBoundaryShapeClosed(false);
+                }}
                 disabled={isSubmitting}
+                mapClassName="h-64"
+                flyToCenter={flyToCenter}
+                leadingActions={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      isSubmitting ||
+                      isGeocoding ||
+                      ![city, region, country].some((part) => part.trim().length > 0)
+                    }
+                    onClick={(): void => {
+                      void (async (): Promise<void> => {
+                        const query = [city, region, country]
+                          .map((part) => part.trim())
+                          .filter(Boolean)
+                          .join(", ");
+                        if (!query) {
+                          showErrorToast("Enter a city, region, or country first.");
+                          return;
+                        }
+                        setIsGeocoding(true);
+                        try {
+                          const result = await geocodeQuery(query);
+                          setFlyToCenter([result.latitude, result.longitude]);
+                          showSuccessToast(`Centered on ${result.displayName}`);
+                        } catch (err) {
+                          if (isAppError(err)) {
+                            showErrorToast(err.message);
+                          } else {
+                            showErrorToast("Could not locate that address on the map.");
+                          }
+                        } finally {
+                          setIsGeocoding(false);
+                        }
+                      })();
+                    }}
+                  >
+                    {isGeocoding ? "Locating…" : "Center on address"}
+                  </Button>
+                }
+                idleHint="Choose how to locate the farm on the map, or skip this step."
+                areaLabel={
+                  boundaryShapeClosed && boundaryCoordinates.length >= 3 ? (
+                    <span className="text-foreground font-medium">
+                      Boundary ready — {boundaryCoordinates.length} points
+                    </span>
+                  ) : (
+                    "No boundary mapped yet"
+                  )
+                }
               />
             </div>
           ) : null}

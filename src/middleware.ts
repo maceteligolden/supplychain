@@ -49,6 +49,83 @@ async function isBackendAuthenticated(request: NextRequest): Promise<boolean> {
   return Boolean(refreshToken);
 }
 
+type MiddlewareRefreshResult = {
+  accessToken: string;
+  refreshToken: string;
+  setCookies: string[];
+};
+
+function extractCookieValue(setCookies: string[], cookieName: string): string | null {
+  const match = setCookies.find((cookie) => cookie.startsWith(`${cookieName}=`));
+  if (!match) {
+    return null;
+  }
+  const firstPart = match.split(";")[0] ?? "";
+  const separatorIndex = firstPart.indexOf("=");
+  return separatorIndex === -1 ? null : firstPart.slice(separatorIndex + 1);
+}
+
+/**
+ * Refreshes the session against the backend from middleware — the only place
+ * that can both hand the current render a fresh access token and persist the
+ * rotated cookies to the browser (RSC renders cannot set cookies).
+ */
+async function refreshSessionInMiddleware(
+  request: NextRequest,
+): Promise<MiddlewareRefreshResult | null> {
+  if (!env.apiBaseUrl) {
+    return null;
+  }
+
+  const refreshToken = request.cookies.get(env.refreshCookieName)?.value;
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${env.apiBaseUrl}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: `${env.refreshCookieName}=${refreshToken}`,
+      },
+    });
+
+    const setCookies = response.headers.getSetCookie?.() ?? [];
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const accessToken = extractCookieValue(setCookies, env.accessCookieName);
+    const newRefreshToken = extractCookieValue(setCookies, env.refreshCookieName);
+
+    if (!accessToken || !newRefreshToken) {
+      return null;
+    }
+
+    return { accessToken, refreshToken: newRefreshToken, setCookies };
+  } catch {
+    return null;
+  }
+}
+
+function buildForwardedCookieHeader(
+  request: NextRequest,
+  refreshed: MiddlewareRefreshResult,
+): string {
+  const parts: string[] = [];
+  for (const cookie of request.cookies.getAll()) {
+    if (cookie.name === env.accessCookieName || cookie.name === env.refreshCookieName) {
+      continue;
+    }
+    parts.push(`${cookie.name}=${cookie.value}`);
+  }
+  parts.push(`${env.accessCookieName}=${refreshed.accessToken}`);
+  parts.push(`${env.refreshCookieName}=${refreshed.refreshToken}`);
+  return parts.join("; ");
+}
+
 async function shouldRedirectFromLoginPage(request: NextRequest): Promise<boolean> {
   if (env.useMockApi) {
     return isMockAuthenticated(request);
@@ -66,7 +143,6 @@ async function isAuthenticated(request: NextRequest): Promise<boolean> {
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
-  const authenticated = await isAuthenticated(request);
 
   if (isPublicApiRoute(pathname, request.method)) {
     return NextResponse.next();
@@ -80,8 +156,40 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
+  const isApiPath = pathname.startsWith("/api/");
+
+  // Backend mode, page navigation: refresh expired sessions here so the render
+  // gets a valid access token AND the browser receives the rotated cookies.
+  if (!env.useMockApi && !isApiPath) {
+    if (await hasValidAccessToken(request)) {
+      return NextResponse.next();
+    }
+
+    const refreshed = await refreshSessionInMiddleware(request);
+    if (refreshed) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("cookie", buildForwardedCookieHeader(request, refreshed));
+
+      const response = NextResponse.next({ request: { headers: requestHeaders } });
+      for (const setCookie of refreshed.setCookies) {
+        response.headers.append("Set-Cookie", setCookie);
+      }
+      return response;
+    }
+
+    // Refresh failed or no refresh cookie — clear dead cookies and re-login.
+    const loginUrl = new URL(PAGE_ROUTES.login, request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    redirectResponse.cookies.delete(env.accessCookieName);
+    redirectResponse.cookies.delete(env.refreshCookieName);
+    return redirectResponse;
+  }
+
+  const authenticated = await isAuthenticated(request);
+
   if (!authenticated) {
-    if (pathname.startsWith("/api/")) {
+    if (isApiPath) {
       return NextResponse.json(
         { code: "UNAUTHORIZED", message: "Not authenticated" },
         { status: 401 },
