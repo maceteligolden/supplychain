@@ -1,14 +1,9 @@
-import { createAppError } from "@/lib/errors";
 import {
   createSupplyChainSchema,
   type CreateSupplyChainSchemaInput,
 } from "@/lib/validation/schemas/supply-chain.schema";
 import { validate } from "@/lib/validation";
-import {
-  createSupplyChain,
-  getAllSupplyChains,
-  isSupplyChainCodeTaken,
-} from "@/mocks/data/supply-chains";
+import { createSupplyChain, getAllSupplyChains } from "@/mocks/data/supply-chains";
 import { syncSupplyChainAllocations } from "@/mocks/data/batch-allocations";
 import {
   errorResponse,
@@ -62,18 +57,8 @@ export async function POST(request: Request): Promise<Response> {
           label: "supply chain",
         });
 
-        if (isSupplyChainCodeTaken(input.code)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Supply chain code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         const supplyChain = createSupplyChain({
           name: input.name,
-          code: input.code,
           description: input.description || undefined,
           status: input.status as GetSupplyChainOutput["status"],
           commodityId: input.commodityId,

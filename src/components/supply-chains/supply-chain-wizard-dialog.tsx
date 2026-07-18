@@ -31,7 +31,6 @@ import {
 } from "@/config/supply-chain-status";
 import { supplyChainDetailPage } from "@/config/page-routes";
 import { getBatchMaxAllocation } from "@/lib/supply-chain/supply-chain-stats";
-import { generateSupplyChainCodeFromName } from "@/lib/supply-chain/code-generator";
 import { formatFarmLocation } from "@/lib/farm/format-location";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
@@ -136,12 +135,10 @@ export function SupplyChainWizardDialog({
   const [allocationDraft, setAllocationDraft] =
     useState<AllocationDraft>(initialAllocations);
   const [name, setName] = useState(supplyChain?.name ?? "");
-  const [code, setCode] = useState(supplyChain?.code ?? "");
   const [description, setDescription] = useState(supplyChain?.description ?? "");
   const [status, setStatus] = useState<SupplyChainStatus>(
     supplyChain?.status ?? "ACTIVE",
   );
-  const [codeManuallyEdited, setCodeManuallyEdited] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedFarms = useMemo(
@@ -160,10 +157,8 @@ export function SupplyChainWizardDialog({
     setSelectedFarmIds(initialFarmIds);
     setAllocationDraft(initialAllocations);
     setName(supplyChain?.name ?? "");
-    setCode(supplyChain?.code ?? "");
     setDescription(supplyChain?.description ?? "");
     setStatus(supplyChain?.status ?? "ACTIVE");
-    setCodeManuallyEdited(isEdit);
   }
 
   function handleOpenChange(nextOpen: boolean): void {
@@ -187,13 +182,6 @@ export function SupplyChainWizardDialog({
     setAllocationDraft({});
   }
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!codeManuallyEdited) {
-      setCode(generateSupplyChainCodeFromName(value));
-    }
-  }
-
   function scrollCarousel(direction: "left" | "right"): void {
     const node = carouselRef.current;
     if (!node) {
@@ -213,7 +201,7 @@ export function SupplyChainWizardDialog({
     if (currentStep === 1) {
       return Object.values(allocationDraft).some((value) => Number(value) > 0);
     }
-    return name.trim().length >= 2 && code.trim().length >= 2;
+    return name.trim().length >= 2;
   }
 
   async function handleSubmit(): Promise<void> {
@@ -228,7 +216,6 @@ export function SupplyChainWizardDialog({
 
     const metadata = {
       name,
-      code,
       description: description.trim() || undefined,
       status,
       commodityId,
@@ -439,24 +426,17 @@ export function SupplyChainWizardDialog({
                 <Input
                   id="chain-name"
                   value={name}
-                  onChange={(event) => handleNameChange(event.target.value)}
+                  onChange={(event) => setName(event.target.value)}
                   required
                   disabled={isSubmitting}
                 />
               </div>
-              <div className="gap-card flex flex-col">
-                <Label htmlFor="chain-code">Code</Label>
-                <Input
-                  id="chain-code"
-                  value={code}
-                  onChange={(event): void => {
-                    setCodeManuallyEdited(true);
-                    setCode(event.target.value.toUpperCase());
-                  }}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+              {isEdit && supplyChain ? (
+                <div className="gap-card flex flex-col">
+                  <Label>Code</Label>
+                  <code className="text-sm">{supplyChain.code}</code>
+                </div>
+              ) : null}
               <div className="gap-card flex flex-col">
                 <Label htmlFor="chain-description">Description (optional)</Label>
                 <Input

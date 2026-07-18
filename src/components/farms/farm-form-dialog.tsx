@@ -30,7 +30,6 @@ import {
 } from "@/config/farm-status";
 import { createEmptyFarmLocation } from "@/lib/farm/empty-location";
 import { createEmptyFarmOwner } from "@/lib/farm/empty-owner";
-import { generateFarmCodeFromName } from "@/lib/farm/code-generator";
 import { cn } from "@/lib/utils";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
@@ -95,7 +94,6 @@ export function FarmFormDialog({
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState(farm?.name ?? "");
-  const [code, setCode] = useState(farm?.code ?? "");
   const [commodityIds, setCommodityIds] = useState<string[]>(farm?.commodityIds ?? []);
   const [ownerFirstName, setOwnerFirstName] = useState(farm?.owner.firstName ?? "");
   const [ownerLastName, setOwnerLastName] = useState(farm?.owner.lastName ?? "");
@@ -123,7 +121,6 @@ export function FarmFormDialog({
     farm?.declarationAccepted ?? false,
   );
   const [status, setStatus] = useState<FarmStatus>(farm?.status ?? "DRAFT");
-  const [codeManuallyEdited, setCodeManuallyEdited] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const boundaryMapCenter = useMemo((): LatLngExpression | undefined => {
@@ -138,7 +135,6 @@ export function FarmFormDialog({
   function resetWizardState(): void {
     setStep(0);
     setName(farm?.name ?? "");
-    setCode(farm?.code ?? "");
     setCommodityIds(farm?.commodityIds ?? []);
     setOwnerFirstName(farm?.owner.firstName ?? "");
     setOwnerLastName(farm?.owner.lastName ?? "");
@@ -162,7 +158,6 @@ export function FarmFormDialog({
     );
     setDeclarationAccepted(farm?.declarationAccepted ?? false);
     setStatus(farm?.status ?? "DRAFT");
-    setCodeManuallyEdited(isEdit);
   }
 
   function handleOpenChange(nextOpen: boolean): void {
@@ -170,13 +165,6 @@ export function FarmFormDialog({
       resetWizardState();
     }
     onOpenChange(nextOpen);
-  }
-
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!codeManuallyEdited) {
-      setCode(generateFarmCodeFromName(value));
-    }
   }
 
   function toggleCommodity(commodityId: string): void {
@@ -190,9 +178,7 @@ export function FarmFormDialog({
   function canProceedFromStep(currentStep: number): boolean {
     const kind = getStepKind(currentStep, isEdit);
     if (kind === "farm") {
-      return (
-        name.trim().length >= 2 && code.trim().length >= 2 && commodityIds.length > 0
-      );
+      return name.trim().length >= 2 && commodityIds.length > 0;
     }
     if (kind === "location") {
       return (
@@ -262,7 +248,6 @@ export function FarmFormDialog({
 
     const payload = {
       name,
-      code,
       owner: {
         firstName: ownerFirstName,
         lastName: ownerLastName,
@@ -349,24 +334,17 @@ export function FarmFormDialog({
                 <Input
                   id="farm-name"
                   value={name}
-                  onChange={(event) => handleNameChange(event.target.value)}
+                  onChange={(event) => setName(event.target.value)}
                   required
                   disabled={isSubmitting}
                 />
               </div>
-              <div className="gap-card flex flex-col">
-                <Label htmlFor="farm-code">Code</Label>
-                <Input
-                  id="farm-code"
-                  value={code}
-                  onChange={(event): void => {
-                    setCodeManuallyEdited(true);
-                    setCode(event.target.value.toUpperCase());
-                  }}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+              {isEdit && farm ? (
+                <div className="gap-card flex flex-col">
+                  <Label>Code</Label>
+                  <code className="text-sm">{farm.code}</code>
+                </div>
+              ) : null}
               <div className="gap-card flex flex-col">
                 <Label>Commodities</Label>
                 <p className="text-muted-foreground text-xs">

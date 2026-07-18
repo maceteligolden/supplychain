@@ -1,14 +1,9 @@
-import { createAppError } from "@/lib/errors";
 import {
   createCommoditySchema,
   type CreateCommoditySchemaInput,
 } from "@/lib/validation/schemas/commodity.schema";
 import { validate } from "@/lib/validation";
-import {
-  createCommodity,
-  getAllCommodities,
-  isCodeTaken,
-} from "@/mocks/data/commodities";
+import { createCommodity, getAllCommodities } from "@/mocks/data/commodities";
 import {
   errorResponse,
   jsonResponse,
@@ -61,18 +56,8 @@ export async function POST(request: Request): Promise<Response> {
           label: "commodity",
         });
 
-        if (isCodeTaken(input.code)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Commodity code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         const commodity = createCommodity({
           name: input.name,
-          code: input.code,
           unit: input.unit as GetCommodityOutput["unit"],
           imageFileName: input.imageFileName || undefined,
         });

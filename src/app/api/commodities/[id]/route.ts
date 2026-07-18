@@ -7,7 +7,6 @@ import { validate } from "@/lib/validation";
 import {
   deleteCommodity,
   getCommodityById,
-  isCodeTaken,
   updateCommodity,
 } from "@/mocks/data/commodities";
 import {
@@ -98,18 +97,8 @@ export async function PATCH(
           label: "commodity update",
         });
 
-        if (input.code && isCodeTaken(input.code, id)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Commodity code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         const updated = updateCommodity(id, {
           name: input.name,
-          code: input.code,
           unit: input.unit as GetCommodityOutput["unit"] | undefined,
           imageFileName: input.imageFileName || undefined,
         });

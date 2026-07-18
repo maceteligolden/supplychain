@@ -5,12 +5,7 @@ import {
 } from "@/lib/validation/schemas/actor.schema";
 import { validate } from "@/lib/validation";
 import { isActorReferencedByEvent } from "@/mocks/data/supply-chain-events";
-import {
-  deleteActor,
-  getActorById,
-  isActorCodeTaken,
-  updateActor,
-} from "@/mocks/data/actors";
+import { deleteActor, getActorById, updateActor } from "@/mocks/data/actors";
 import {
   errorResponse,
   jsonResponse,
@@ -96,18 +91,8 @@ export async function PATCH(
           label: "actor update",
         });
 
-        if (input.code && isActorCodeTaken(input.code, id)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Actor code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         const updated = updateActor(id, {
           name: input.name,
-          code: input.code,
           type: input.type as GetActorOutput["type"] | undefined,
           address: input.address
             ? {

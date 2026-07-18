@@ -33,6 +33,23 @@ function generateId(): string {
   return `commodity_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Generates the next PREFIX-YYYY-NNNN commodity code for the mock store. */
+function nextCommodityCode(): string {
+  const year = new Date().getUTCFullYear();
+  const prefix = `COM-${year}-`;
+  let maxSequence = 0;
+  for (const item of commodities) {
+    if (!item.code.startsWith(prefix)) {
+      continue;
+    }
+    const sequence = Number(item.code.slice(prefix.length));
+    if (!Number.isNaN(sequence) && sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  }
+  return `${prefix}${String(maxSequence + 1).padStart(4, "0")}`;
+}
+
 export function getAllCommodities(): CommodityInterface[] {
   return [...commodities];
 }
@@ -49,7 +66,7 @@ export function isCodeTaken(code: string, excludeId?: string): boolean {
 
 export function createCommodity(input: CreateCommodityInput): CommodityInterface {
   const now = new Date().toISOString();
-  const code = input.code.toUpperCase();
+  const code = nextCommodityCode();
 
   const commodity: CommodityInterface = {
     id: generateId(),
@@ -79,14 +96,12 @@ export function updateCommodity(
     return undefined;
   }
 
-  const code = input.code ? input.code.toUpperCase() : existing.code;
   const updated: CommodityInterface = {
     ...existing,
     name: input.name?.trim() ?? existing.name,
-    code,
     unit: input.unit ?? existing.unit,
     imageUrl: input.imageFileName
-      ? buildMockImageUrl({ code, imageFileName: input.imageFileName })
+      ? buildMockImageUrl({ code: existing.code, imageFileName: input.imageFileName })
       : existing.imageUrl,
     updatedAt: new Date().toISOString(),
   };

@@ -27,7 +27,6 @@ import {
   COMMODITY_UNITS,
   type CommodityUnit,
 } from "@/config/commodity-units";
-import { generateCommodityCodeFromName } from "@/lib/commodity/code-generator";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
 import { createCommodity, updateCommodity } from "@/services/commodities.service";
@@ -45,8 +44,8 @@ export interface CommodityFormDialogProps {
 /**
  * CommodityFormDialog
  *
- * Create/edit dialog for commodities. Auto-generates code from name (editable),
- * unit select, and image upload stub. Persists via commodities service.
+ * Create/edit dialog for commodities. Codes are server-generated and immutable.
+ * Unit select and image upload; persists via commodities service.
  */
 export function CommodityFormDialog({
   open,
@@ -57,23 +56,9 @@ export function CommodityFormDialog({
   const isEdit = Boolean(commodity);
 
   const [name, setName] = useState(commodity?.name ?? "");
-  const [code, setCode] = useState(commodity?.code ?? "");
   const [unit, setUnit] = useState<CommodityUnit>(commodity?.unit ?? "KG");
-  const [codeManuallyEdited, setCodeManuallyEdited] = useState(isEdit);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!codeManuallyEdited) {
-      setCode(generateCommodityCodeFromName(value));
-    }
-  }
-
-  function handleCodeChange(value: string): void {
-    setCodeManuallyEdited(true);
-    setCode(value.toUpperCase());
-  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -81,7 +66,6 @@ export function CommodityFormDialog({
 
     const payload = {
       name,
-      code,
       unit,
       imageFile,
     };
@@ -128,26 +112,18 @@ export function CommodityFormDialog({
             <Input
               id="commodity-name"
               value={name}
-              onChange={(event) => handleNameChange(event.target.value)}
+              onChange={(event) => setName(event.target.value)}
               placeholder="Cocoa"
               required
               disabled={isSubmitting}
             />
           </div>
-          <div className="gap-card flex flex-col">
-            <Label htmlFor="commodity-code">Code</Label>
-            <Input
-              id="commodity-code"
-              value={code}
-              onChange={(event) => handleCodeChange(event.target.value)}
-              placeholder="COCOA"
-              required
-              disabled={isSubmitting}
-            />
-            <p className="text-muted-foreground text-xs">
-              Auto-generated from name — you can edit before saving.
-            </p>
-          </div>
+          {isEdit && commodity ? (
+            <div className="gap-card flex flex-col">
+              <Label>Code</Label>
+              <code className="text-sm">{commodity.code}</code>
+            </div>
+          ) : null}
           <div className="gap-card flex flex-col">
             <Label>Unit of measurement</Label>
             <Select

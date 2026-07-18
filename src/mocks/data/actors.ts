@@ -59,6 +59,23 @@ function generateId(): string {
   return `actor_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Generates the next PREFIX-YYYY-NNNN actor code for the mock store. */
+function nextActorCode(): string {
+  const year = new Date().getUTCFullYear();
+  const prefix = `ACT-${year}-`;
+  let maxSequence = 0;
+  for (const item of actors) {
+    if (!item.code.startsWith(prefix)) {
+      continue;
+    }
+    const sequence = Number(item.code.slice(prefix.length));
+    if (!Number.isNaN(sequence) && sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  }
+  return `${prefix}${String(maxSequence + 1).padStart(4, "0")}`;
+}
+
 export function getAllActors(): ActorInterface[] {
   return [...actors];
 }
@@ -78,7 +95,7 @@ export function createActor(input: CreateActorInput): ActorInterface {
   const actor: ActorInterface = {
     id: generateId(),
     name: input.name.trim(),
-    code: input.code.toUpperCase(),
+    code: nextActorCode(),
     type: input.type,
     address: {
       line1: input.address.line1?.trim() || undefined,
@@ -121,7 +138,6 @@ export function updateActor(
   const updated: ActorInterface = {
     ...existing,
     name: input.name?.trim() ?? existing.name,
-    code: input.code ? input.code.toUpperCase() : existing.code,
     type: input.type ?? existing.type,
     address,
     status: input.status ?? existing.status,

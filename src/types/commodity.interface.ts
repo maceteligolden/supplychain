@@ -21,7 +21,6 @@ export interface CommodityInterface {
 
 export type CreateCommodityInput = {
   name: string;
-  code: string;
   unit: CommodityUnit;
   /** Optional image file uploaded with the commodity. */
   imageFile?: File | null;
@@ -31,7 +30,6 @@ export type CreateCommodityInput = {
 
 export type UpdateCommodityInput = {
   name?: string;
-  code?: string;
   unit?: CommodityUnit;
   imageFile?: File | null;
   imageFileName?: string;

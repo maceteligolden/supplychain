@@ -64,6 +64,23 @@ function generateId(): string {
   return `farm_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Generates the next PREFIX-YYYY-NNNN farm code for the mock store. */
+function nextFarmCode(): string {
+  const year = new Date().getUTCFullYear();
+  const prefix = `FARM-${year}-`;
+  let maxSequence = 0;
+  for (const item of farms) {
+    if (!item.code.startsWith(prefix)) {
+      continue;
+    }
+    const sequence = Number(item.code.slice(prefix.length));
+    if (!Number.isNaN(sequence) && sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  }
+  return `${prefix}${String(maxSequence + 1).padStart(4, "0")}`;
+}
+
 export function getAllFarms(): FarmInterface[] {
   return [...farms];
 }
@@ -88,7 +105,7 @@ export function areCommoditiesLinked(commodityIds: string[]): boolean {
 
 export function createFarm(input: CreateFarmInput): FarmInterface {
   const now = new Date().toISOString();
-  const code = input.code.toUpperCase();
+  const code = nextFarmCode();
 
   const farm: FarmInterface = {
     id: generateId(),
@@ -134,7 +151,6 @@ export function updateFarm(
     return undefined;
   }
 
-  const code = input.code ? input.code.toUpperCase() : existing.code;
   const owner = input.owner
     ? {
         firstName: input.owner.firstName?.trim() ?? existing.owner.firstName,
@@ -157,7 +173,6 @@ export function updateFarm(
   const updated: FarmInterface = {
     ...existing,
     name: input.name?.trim() ?? existing.name,
-    code,
     status: input.status ?? existing.status,
     owner,
     commodityIds: input.commodityIds ?? existing.commodityIds,
