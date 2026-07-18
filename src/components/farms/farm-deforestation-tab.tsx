@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { FarmAssessmentHistoryTable } from "@/components/farms/farm-assessment-history-table";
+import { FarmAssessmentProvenance } from "@/components/farms/farm-assessment-provenance";
 import { FarmBoundarySection } from "@/components/farms/farm-boundary-section";
 import { FarmLandCoverTimelineChart } from "@/components/farms/farm-land-cover-timeline-chart";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +73,12 @@ export function FarmDeforestationTab({
   const router = useRouter();
   const [isRunning, setIsRunning] = useState(false);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | undefined>(
-    assessments[0]?.id,
+    assessments.find(isAssessmentComplete)?.id ?? assessments[0]?.id,
+  );
+
+  const lastGoodAssessment = useMemo(
+    () => assessments.find(isAssessmentComplete) ?? null,
+    [assessments],
   );
 
   const selectedAssessment = useMemo(
@@ -85,7 +91,7 @@ export function FarmDeforestationTab({
   const selectedComplete =
     selectedAssessment && isAssessmentComplete(selectedAssessment)
       ? selectedAssessment
-      : null;
+      : lastGoodAssessment;
 
   async function handleRunAssessment(): Promise<void> {
     if (!canRun) {
@@ -93,24 +99,38 @@ export function FarmDeforestationTab({
       return;
     }
 
+    const previousGoodId = lastGoodAssessment?.id;
     setIsRunning(true);
 
     try {
       const assessment = await runFarmAssessment(farm.id);
-      setSelectedAssessmentId(assessment.id);
 
       if (assessment.status === "FAILED") {
-        showErrorToast(assessment.errorMessage ?? "Assessment failed.");
+        showErrorToast(
+          assessment.errorMessage ??
+            "Assessment failed after retries. Showing the last successful result.",
+        );
+        if (previousGoodId) {
+          setSelectedAssessmentId(previousGoodId);
+        }
       } else {
+        setSelectedAssessmentId(assessment.id);
         showSuccessToast("Deforestation assessment completed.");
       }
 
       router.refresh();
     } catch (err) {
+      if (previousGoodId) {
+        setSelectedAssessmentId(previousGoodId);
+      }
       if (isAppError(err)) {
-        showErrorToast(err.message);
+        showErrorToast(
+          `${err.message} Showing the last successful assessment when available.`,
+        );
       } else {
-        showErrorToast("Failed to run assessment. Please try again.");
+        showErrorToast(
+          "Failed to run assessment after retries. Showing the last successful result when available.",
+        );
       }
     } finally {
       setIsRunning(false);
@@ -135,7 +155,8 @@ export function FarmDeforestationTab({
             </h2>
             <p className="text-muted-foreground mt-1 text-sm">
               Run WHISP and GFW analysis against the saved boundary. Results appear on
-              the map above and in the chart below.
+              the map above and in the chart below. Supports due diligence — not a legal
+              EUDR certificate.
             </p>
           </div>
           <Button
@@ -150,18 +171,21 @@ export function FarmDeforestationTab({
 
         {!canRun ? (
           <p className="text-muted-foreground bg-accent/40 rounded-lg px-3 py-2 text-xs">
-            Save a farm boundary first — assessments require a polygon (draw,
-            coordinates, or GeoJSON).
+            Open the full-screen map, locate the farm in Nigeria, and save a boundary
+            before running an assessment.
           </p>
         ) : null}
 
         {isRunning ? (
           <p className="text-muted-foreground text-xs">
-            Assessment in progress — external providers may take up to a minute.
+            Assessment in progress — retries up to 3 times. External providers may take
+            up to a minute.
           </p>
         ) : null}
 
-        {selectedAssessment && !selectedComplete ? (
+        {selectedAssessment &&
+        !isAssessmentComplete(selectedAssessment) &&
+        !selectedComplete ? (
           <Card className="border-border/80 bg-surface-secondary/30">
             <CardContent className="pt-6">
               <p className="text-muted-foreground text-sm">
@@ -178,7 +202,7 @@ export function FarmDeforestationTab({
             <CardContent className="gap-card flex flex-col pt-6">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-foreground text-sm font-medium">
-                  {selectedComplete.id === assessments[0]?.id
+                  {selectedComplete.id === lastGoodAssessment?.id
                     ? "Latest result"
                     : "Selected assessment"}
                 </span>
@@ -187,6 +211,7 @@ export function FarmDeforestationTab({
                 >
                   {ASSESSMENT_RISK_LABELS[selectedComplete.riskLevel]}
                 </Badge>
+                <FarmAssessmentProvenance source={selectedComplete.source} />
                 <span className="text-muted-foreground text-xs">
                   {formatDateTime(selectedComplete.assessedAt)}
                 </span>
@@ -232,7 +257,8 @@ export function FarmDeforestationTab({
                     {selectedComplete.analysis.forestCoverPercent}%
                   </dd>
                 </div>
-                {selectedComplete.analysis.whispRiskPcrop ? (
+                {selectedComplete.analysis.whispRiskPcrop &&
+                selectedComplete.source !== "FALLBACK" ? (
                   <div className="bg-background/60 flex flex-col gap-1 rounded-lg border p-3">
                     <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                       WHISP cocoa risk
@@ -260,7 +286,7 @@ export function FarmDeforestationTab({
 
       <FarmLandCoverTimelineChart
         points={landCoverTimeline}
-        selectedAssessmentId={selectedAssessmentId}
+        selectedAssessmentId={selectedComplete?.id ?? selectedAssessmentId}
       />
 
       <section className="flex flex-col gap-4">
@@ -274,7 +300,7 @@ export function FarmDeforestationTab({
         </div>
         <FarmAssessmentHistoryTable
           assessments={assessments}
-          selectedAssessmentId={selectedAssessmentId}
+          selectedAssessmentId={selectedComplete?.id ?? selectedAssessmentId}
           onSelectAssessment={setSelectedAssessmentId}
         />
       </section>

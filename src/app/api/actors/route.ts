@@ -1,10 +1,9 @@
-import { createAppError } from "@/lib/errors";
 import {
   createActorSchema,
   type CreateActorSchemaInput,
 } from "@/lib/validation/schemas/actor.schema";
 import { validate } from "@/lib/validation";
-import { createActor, getAllActors, isActorCodeTaken } from "@/mocks/data/actors";
+import { createActor, getAllActors } from "@/mocks/data/actors";
 import {
   errorResponse,
   jsonResponse,
@@ -54,18 +53,8 @@ export async function POST(request: Request): Promise<Response> {
           label: "actor",
         });
 
-        if (isActorCodeTaken(input.code)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Actor code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         const actor = createActor({
           name: input.name,
-          code: input.code,
           type: input.type as GetActorOutput["type"],
           address: {
             line1: input.address.line1 || undefined,

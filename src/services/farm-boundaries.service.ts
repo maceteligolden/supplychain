@@ -23,7 +23,7 @@ export async function getFarmBoundaryByFarmId(
   });
 }
 
-/** Creates or replaces a farm boundary polygon. */
+/** Creates or replaces a farm boundary polygon (single or multi-plot). */
 export async function upsertFarmBoundary(
   farmId: string,
   input: UpsertFarmBoundaryInput,
@@ -42,6 +42,18 @@ export async function upsertFarmBoundary(
 export async function geocodeFarm(farmId: string): Promise<GetFarmGeocodeOutput> {
   return fetchJson<GetFarmGeocodeOutput>({
     url: API_ROUTES.farms.geocode(farmId),
+    options: {
+      method: "GET",
+      cache: "no-store",
+      headers: await getAuthHeaders(),
+    },
+  });
+}
+
+/** Forward-geocodes a free-text address with Nigeria-biased suggestions. */
+export async function geocodeQuery(query: string): Promise<GetFarmGeocodeOutput> {
+  return fetchJson<GetFarmGeocodeOutput>({
+    url: API_ROUTES.geocode.query(query),
     options: {
       method: "GET",
       cache: "no-store",

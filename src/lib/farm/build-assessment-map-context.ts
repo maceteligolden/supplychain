@@ -5,15 +5,24 @@ import type {
   FarmMapLegendItemInterface,
   FarmMapTileLayerInterface,
 } from "@/types/farm-map-context.interface";
+import { getBoundaryPlots } from "@/lib/farm/boundary-plots";
 import { MAP_LEGEND_COLORS } from "@/lib/farm/map-theme";
 
 const DEFAULT_TILE_LAYERS: FarmMapTileLayerInterface[] = [
+  {
+    id: "tree_cover_density",
+    label: "Tree cover density",
+    urlTemplate:
+      "https://tiles.globalforestwatch.org/umd_tree_cover_density_2000/latest/dynamic/{z}/{x}/{y}.png",
+    opacity: 0.7,
+    defaultVisible: true,
+  },
   {
     id: "tree_cover_loss",
     label: "Tree cover loss",
     urlTemplate:
       "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?startYear=2021&endYear=2024",
-    opacity: 0.75,
+    opacity: 0.8,
     defaultVisible: true,
   },
   {
@@ -21,24 +30,8 @@ const DEFAULT_TILE_LAYERS: FarmMapTileLayerInterface[] = [
     label: "Tree cover gain",
     urlTemplate:
       "https://tiles.globalforestwatch.org/umd_tree_cover_gain_from_height/latest/dynamic/{z}/{x}/{y}.png",
-    opacity: 0.65,
-    defaultVisible: true,
-  },
-  {
-    id: "integrated_alerts",
-    label: "Integrated alerts",
-    urlTemplate:
-      "https://tiles.globalforestwatch.org/gfw_integrated_alerts/latest/dynamic/{z}/{x}/{y}.png",
     opacity: 0.7,
-    defaultVisible: false,
-  },
-  {
-    id: "cocoa_risk",
-    label: "West Africa cocoa risk",
-    urlTemplate:
-      "https://tiles.globalforestwatch.org/gfw_west_africa_cocoa_deforestation_risk/latest/dynamic/{z}/{x}/{y}.png",
-    opacity: 0.55,
-    defaultVisible: false,
+    defaultVisible: true,
   },
 ];
 
@@ -55,16 +48,20 @@ function buildLegend(
     analysis.stabilityPercent ??
       Math.max(0, 100 - analysis.deforestationPercent - analysis.afforestationPercent),
   );
+  const nonForestPercent = Math.max(
+    0,
+    Math.round(
+      (100 -
+        analysis.deforestationPercent -
+        analysis.afforestationPercent -
+        stablePercent) *
+        100,
+    ) / 100,
+  );
 
   return [
     {
-      category: "Farm land mass",
-      color: MAP_LEGEND_COLORS.landMass,
-      percent: 100,
-      hectares: boundaryAreaHectares,
-    },
-    {
-      category: "Deforestation (loss)",
+      category: "Tree cover loss",
       color: MAP_LEGEND_COLORS.deforestation,
       percent: analysis.deforestationPercent,
       hectares: hectaresFromPercent(
@@ -73,7 +70,7 @@ function buildLegend(
       ),
     },
     {
-      category: "Afforestation (gain)",
+      category: "Tree cover gain",
       color: MAP_LEGEND_COLORS.afforestation,
       percent: analysis.afforestationPercent,
       hectares: hectaresFromPercent(
@@ -87,14 +84,20 @@ function buildLegend(
       percent: stablePercent,
       hectares: hectaresFromPercent(boundaryAreaHectares, stablePercent),
     },
+    {
+      category: "Non-forest",
+      color: MAP_LEGEND_COLORS.nonForest,
+      percent: nonForestPercent,
+      hectares: hectaresFromPercent(boundaryAreaHectares, nonForestPercent),
+    },
   ];
 }
 
 function computeBbox(
-  boundary: FarmBoundaryInterface,
+  plots: { latitude: number; longitude: number }[][],
 ): [number, number, number, number] {
-  const longitudes = boundary.coordinates.map((coordinate) => coordinate.longitude);
-  const latitudes = boundary.coordinates.map((coordinate) => coordinate.latitude);
+  const longitudes = plots.flatMap((plot) => plot.map((c) => c.longitude));
+  const latitudes = plots.flatMap((plot) => plot.map((c) => c.latitude));
 
   return [
     Math.min(...longitudes),
@@ -110,9 +113,12 @@ export function buildAssessmentMapContext(input: {
   analysis: FarmAssessmentAnalysisInterface;
   boundaryAreaHectares: number;
 }): FarmAssessmentMapContextInterface {
+  const plots = getBoundaryPlots(input.boundary);
+
   return {
-    boundary: input.boundary.coordinates,
-    bbox: computeBbox(input.boundary),
+    boundary: plots[0] ?? input.boundary.coordinates,
+    plots,
+    bbox: computeBbox(plots.length > 0 ? plots : [input.boundary.coordinates]),
     legend: buildLegend(input.analysis, input.boundaryAreaHectares),
     tileLayers: DEFAULT_TILE_LAYERS,
     protectedAreas: { type: "FeatureCollection", features: [] },

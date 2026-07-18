@@ -40,6 +40,7 @@ function formatDate(iso: string): string {
  * SupplyChainRiskSummary
  *
  * Chain-level deforestation risk from linked farm assessments.
+ * Run/rerun actions live next to Allocate more on the Allocations card.
  */
 export function SupplyChainRiskSummary({
   riskSummary,
@@ -56,7 +57,9 @@ export function SupplyChainRiskSummary({
               Deforestation risk
             </h3>
             <p className="text-muted-foreground text-sm">
-              Aggregated from latest assessments on farms supplying this chain.
+              Compact view of latest farm assessments. Use Run assessments in
+              Allocations to assess all linked farms, or open a farm&apos;s
+              Deforestation tab for locate, boundary mapping, and map evidence.
             </p>
           </div>
           <Badge variant={SUPPLY_CHAIN_OVERALL_RISK_BADGE_VARIANT[overallRiskLevel]}>
@@ -74,7 +77,8 @@ export function SupplyChainRiskSummary({
           <p className="text-muted-foreground text-sm">
             {unassessedFarmsCount} linked{" "}
             {unassessedFarmsCount === 1 ? "farm has" : "farms have"} no assessment —
-            overall risk reflects the highest assessed farm only.
+            overall risk reflects the highest assessed farm only. Farms without a saved
+            boundary will fail until a boundary is added.
           </p>
         ) : null}
 

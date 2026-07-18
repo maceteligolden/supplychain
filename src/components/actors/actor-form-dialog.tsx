@@ -26,11 +26,11 @@ import {
   ACTOR_STATUSES,
   ACTOR_STATUS_LABELS,
   ACTOR_TYPES,
+  ACTOR_TYPE_DESCRIPTIONS,
   ACTOR_TYPE_LABELS,
   type ActorStatus,
   type ActorType,
 } from "@/config/actor-types";
-import { generateActorCodeFromName } from "@/lib/actor/code-generator";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
 import { createActor, updateActor } from "@/services/actors.service";
@@ -48,6 +48,7 @@ export interface ActorFormDialogProps {
  * ActorFormDialog
  *
  * Three-step wizard for creating or editing supply chain actors.
+ * Codes are server-generated and immutable.
  */
 export function ActorFormDialog({
   open,
@@ -59,27 +60,23 @@ export function ActorFormDialog({
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState(actor?.name ?? "");
-  const [code, setCode] = useState(actor?.code ?? "");
   const [type, setType] = useState<ActorType>(actor?.type ?? "PROCESSOR");
   const [line1, setLine1] = useState(actor?.address.line1 ?? "");
   const [city, setCity] = useState(actor?.address.city ?? "");
   const [region, setRegion] = useState(actor?.address.region ?? "");
   const [country, setCountry] = useState(actor?.address.country ?? "");
   const [status, setStatus] = useState<ActorStatus>(actor?.status ?? "ACTIVE");
-  const [codeManuallyEdited, setCodeManuallyEdited] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function resetWizardState(): void {
     setStep(0);
     setName(actor?.name ?? "");
-    setCode(actor?.code ?? "");
     setType(actor?.type ?? "PROCESSOR");
     setLine1(actor?.address.line1 ?? "");
     setCity(actor?.address.city ?? "");
     setRegion(actor?.address.region ?? "");
     setCountry(actor?.address.country ?? "");
     setStatus(actor?.status ?? "ACTIVE");
-    setCodeManuallyEdited(isEdit);
   }
 
   function handleOpenChange(nextOpen: boolean): void {
@@ -89,16 +86,9 @@ export function ActorFormDialog({
     onOpenChange(nextOpen);
   }
 
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!codeManuallyEdited) {
-      setCode(generateActorCodeFromName(value));
-    }
-  }
-
   function canProceedFromStep(currentStep: number): boolean {
     if (currentStep === 0) {
-      return name.trim().length >= 2 && code.trim().length >= 2;
+      return name.trim().length >= 2;
     }
     if (currentStep === 1) {
       return (
@@ -115,7 +105,6 @@ export function ActorFormDialog({
 
     const payload = {
       name,
-      code,
       type,
       address: {
         line1: line1.trim() || undefined,
@@ -177,24 +166,17 @@ export function ActorFormDialog({
                 <Input
                   id="actor-name"
                   value={name}
-                  onChange={(event) => handleNameChange(event.target.value)}
+                  onChange={(event) => setName(event.target.value)}
                   required
                   disabled={isSubmitting}
                 />
               </div>
-              <div className="gap-card flex flex-col">
-                <Label htmlFor="actor-code">Code</Label>
-                <Input
-                  id="actor-code"
-                  value={code}
-                  onChange={(event): void => {
-                    setCodeManuallyEdited(true);
-                    setCode(event.target.value.toUpperCase());
-                  }}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+              {isEdit && actor ? (
+                <div className="gap-card flex flex-col">
+                  <Label>Code</Label>
+                  <code className="text-sm">{actor.code}</code>
+                </div>
+              ) : null}
               <div className="gap-card flex flex-col">
                 <Label>Type</Label>
                 <Select
@@ -217,6 +199,9 @@ export function ActorFormDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-muted-foreground text-xs">
+                  {ACTOR_TYPE_DESCRIPTIONS[type]}
+                </p>
               </div>
             </div>
           ) : null}

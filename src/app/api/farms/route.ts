@@ -4,12 +4,7 @@ import {
   type CreateFarmSchemaInput,
 } from "@/lib/validation/schemas/farm.schema";
 import { validate } from "@/lib/validation";
-import {
-  areCommoditiesLinked,
-  createFarm,
-  getAllFarms,
-  isFarmCodeTaken,
-} from "@/mocks/data/farms";
+import { areCommoditiesLinked, createFarm, getAllFarms } from "@/mocks/data/farms";
 import {
   errorResponse,
   jsonResponse,
@@ -59,15 +54,6 @@ export async function POST(request: Request): Promise<Response> {
           label: "farm",
         });
 
-        if (isFarmCodeTaken(input.code)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Farm code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         if (!areCommoditiesLinked(input.commodityIds)) {
           throw createAppError({
             code: "VALIDATION_ERROR",
@@ -81,7 +67,6 @@ export async function POST(request: Request): Promise<Response> {
 
         const farm = createFarm({
           name: input.name,
-          code: input.code,
           status: input.status ?? "DRAFT",
           owner: input.owner,
           commodityIds: input.commodityIds,

@@ -1,50 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { LatLngExpression } from "leaflet";
 
-import { FarmMapLayerControls } from "@/components/farms/farm-map-layer-controls";
 import {
-  FarmUnifiedMapLoader,
-  type FarmUnifiedBasemap,
-} from "@/components/farms/farm-unified-map-loader";
+  FarmBoundaryInputField,
+  resolveBoundaryCoordinates,
+  type BoundaryInputMode,
+} from "@/components/farms/farm-boundary-input-field";
+import { FarmLocatePanel } from "@/components/farms/farm-locate-panel";
+import { FarmMapLayerControls } from "@/components/farms/farm-map-layer-controls";
+import { FarmMapLegend } from "@/components/farms/farm-map-legend";
+import type { FarmUnifiedBasemap } from "@/components/farms/farm-unified-map-loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AssessmentRiskLevel } from "@/config/farm-assessment-risk";
+import { getBoundaryPlots } from "@/lib/farm/boundary-plots";
 import { calculatePolygonAreaHectares } from "@/lib/farm/calculate-polygon-area-hectares";
-import { parseGeoJsonBoundary } from "@/lib/farm/parse-geojson-boundary";
 import { isAppError } from "@/lib/errors";
+import { NIGERIA_DEFAULT_CENTER, type FarmMapCenter } from "@/lib/farm/map-types";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
 import { getFarmAssessmentMapContext } from "@/services/farm-assessments.service";
 import {
   deleteFarmBoundary,
-  geocodeFarm,
   upsertFarmBoundary,
 } from "@/services/farm-boundaries.service";
+import { updateFarm } from "@/services/farms.service";
 import type { FarmAssessmentMapContextInterface } from "@/types/farm-map-context.interface";
+import type { FarmAssessmentMapMode } from "@/types/farm-map-context.interface";
 import type {
   FarmBoundaryInterface,
   GeoCoordinateInterface,
 } from "@/types/farm-boundary.interface";
 import type { FarmInterface } from "@/types/farm.interface";
-
-const GHANA_DEFAULT_CENTER: LatLngExpression = [7.95, -1.03];
-
-type BoundaryInputMode = "draw" | "coordinates" | "geojson";
-
-type CoordinateRow = GeoCoordinateInterface & { id: string };
-
-function createRow(coordinate?: GeoCoordinateInterface): CoordinateRow {
-  return {
-    id: crypto.randomUUID(),
-    latitude: coordinate?.latitude ?? 0,
-    longitude: coordinate?.longitude ?? 0,
-  };
-}
 
 export interface FarmBoundarySectionProps {
   farm: FarmInterface;
@@ -54,7 +42,7 @@ export interface FarmBoundarySectionProps {
   showAssessmentLayers?: boolean;
 }
 
-/** Unified farm map: boundary input and assessment overlays. */
+/** Unified farm map: full-screen locate/draw and assessment overlays. */
 export function FarmBoundarySection({
   farm,
   boundary,
@@ -63,23 +51,35 @@ export function FarmBoundarySection({
   showAssessmentLayers = false,
 }: FarmBoundarySectionProps): React.JSX.Element {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [inputMode, setInputMode] = useState<BoundaryInputMode>("draw");
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [draftCoordinates, setDraftCoordinates] = useState<GeoCoordinateInterface[]>(
     [],
   );
-  const [coordinateRows, setCoordinateRows] = useState<CoordinateRow[]>([
-    createRow(),
-    createRow(),
-    createRow(),
-  ]);
+  const [draftPlots, setDraftPlots] = useState<GeoCoordinateInterface[][]>([]);
   const [isShapeClosed, setIsShapeClosed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGeocoding, setIsGeocoding] = useState(false);
   const [basemap, setBasemap] = useState<FarmUnifiedBasemap>("street");
-  const [flyToCenter, setFlyToCenter] = useState<LatLngExpression | null>(null);
+  const [flyToCenter, setFlyToCenter] = useState<FarmMapCenter | null>(null);
+  const [pickOnMapActive, setPickOnMapActive] = useState(false);
+  const [pendingLocation, setPendingLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    displayName: string;
+  } | null>(null);
+  const [latitudeText, setLatitudeText] = useState(
+    farm.location.latitude?.toFixed(5) ?? "",
+  );
+  const [longitudeText, setLongitudeText] = useState(
+    farm.location.longitude?.toFixed(5) ?? "",
+  );
+  const [focusNonce, setFocusNonce] = useState(0);
+  /** Keeps GPS on the map after confirm until farm props refresh. */
+  const [sessionGps, setSessionGps] = useState<GeoCoordinateInterface | null>(null);
+  const [assessmentMapMode, setAssessmentMapMode] =
+    useState<FarmAssessmentMapMode>("satellite");
 
   const [mapContext, setMapContext] =
     useState<FarmAssessmentMapContextInterface | null>(null);
@@ -87,61 +87,70 @@ export function FarmBoundarySection({
   const [isMapContextLoading, setIsMapContextLoading] = useState(false);
   const [visibleLayerIds, setVisibleLayerIds] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    if (!isFullscreen) {
+      return;
+    }
+    // Fullscreen changes the map pane size; bump focus after layout so fitBounds
+    // uses the tall viewport (inline height was ~240px in debug logs).
+    const timer = window.setTimeout(() => {
+      setFocusNonce((current) => current + 1);
+    }, 50);
+    return (): void => window.clearTimeout(timer);
+  }, [isFullscreen]);
+
+  const savedPlots = useMemo(() => getBoundaryPlots(boundary), [boundary]);
+
   const farmGps = useMemo((): GeoCoordinateInterface | null => {
+    if (pendingLocation) {
+      return {
+        latitude: pendingLocation.latitude,
+        longitude: pendingLocation.longitude,
+      };
+    }
+    if (sessionGps) {
+      return sessionGps;
+    }
     const { latitude, longitude } = farm.location;
     if (latitude !== undefined && longitude !== undefined) {
       return { latitude, longitude };
     }
     return null;
-  }, [farm.location]);
+  }, [farm.location, pendingLocation, sessionGps]);
 
-  const mapCenter = useMemo((): LatLngExpression => {
+  const mapCenter = useMemo((): FarmMapCenter => {
     if (farmGps) {
       return [farmGps.latitude, farmGps.longitude];
     }
-    return GHANA_DEFAULT_CENTER;
+    return NIGERIA_DEFAULT_CENTER;
   }, [farmGps]);
 
-  const previewCoordinates = useMemo((): GeoCoordinateInterface[] => {
-    if (isDrawing && inputMode === "draw") {
-      return draftCoordinates;
-    }
-    if (isDrawing && (inputMode === "coordinates" || inputMode === "geojson")) {
-      return coordinateRows.filter(
-        (row) => Number.isFinite(row.latitude) && Number.isFinite(row.longitude),
-      );
-    }
-    return boundary?.coordinates ?? [];
-  }, [boundary?.coordinates, coordinateRows, draftCoordinates, inputMode, isDrawing]);
-
   const draftAreaHectares = useMemo((): number | null => {
-    const coords =
-      isDrawing && inputMode !== "draw"
-        ? coordinateRows.filter((row) => row.latitude && row.longitude)
-        : draftCoordinates;
-
-    if (coords.length < 3) {
+    if (!isEditing) {
       return null;
     }
-    return calculatePolygonAreaHectares(coords);
-  }, [coordinateRows, draftCoordinates, inputMode, isDrawing]);
+    const plots =
+      draftPlots.length > 0
+        ? draftPlots
+        : draftCoordinates.length >= 3
+          ? [draftCoordinates]
+          : [];
+    if (plots.length === 0) {
+      return null;
+    }
+    return calculatePolygonAreaHectares(plots);
+  }, [draftCoordinates, draftPlots, isEditing]);
 
   const displayArea =
-    isDrawing && draftAreaHectares !== null
+    isEditing && draftAreaHectares !== null
       ? draftAreaHectares
       : (boundary?.areaHectares ?? farm.areaHectares ?? null);
 
   const canShowAssessment =
-    showAssessmentLayers &&
-    !isDrawing &&
-    selectedAssessmentId &&
-    selectedRiskLevel &&
-    boundary;
-
-  const displayedMapContext = canShowAssessment ? mapContext : null;
+    showAssessmentLayers && !isEditing && selectedAssessmentId && mapContext !== null;
 
   useEffect(() => {
-    if (!canShowAssessment || !selectedAssessmentId) {
+    if (!showAssessmentLayers || !selectedAssessmentId || isEditing) {
       return;
     }
 
@@ -166,13 +175,12 @@ export function FarmBoundarySection({
           ),
         );
       } catch (error) {
-        if (cancelled) {
-          return;
+        if (!cancelled) {
+          setMapContext(null);
+          setMapContextError(
+            isAppError(error) ? error.message : "Failed to load map overlays.",
+          );
         }
-        setMapContext(null);
-        setMapContextError(
-          isAppError(error) ? error.message : "Failed to load assessment map layers.",
-        );
       } finally {
         if (!cancelled) {
           setIsMapContextLoading(false);
@@ -185,317 +193,458 @@ export function FarmBoundarySection({
     return (): void => {
       cancelled = true;
     };
-  }, [canShowAssessment, farm.id, selectedAssessmentId]);
+  }, [farm.id, isEditing, selectedAssessmentId, showAssessmentLayers]);
 
-  function startDrawing(mode: BoundaryInputMode = "draw"): void {
-    setInputMode(mode);
-    setIsDrawing(true);
-    setDraftCoordinates(boundary?.coordinates ?? []);
-    setCoordinateRows(
-      boundary?.coordinates.length
-        ? boundary.coordinates.map((coordinate) => createRow(coordinate))
-        : [createRow(), createRow(), createRow()],
-    );
-    setIsShapeClosed(mode !== "draw");
+  function syncLatLngInputs(latitude: number, longitude: number): void {
+    setLatitudeText(latitude.toFixed(5));
+    setLongitudeText(longitude.toFixed(5));
   }
 
-  function cancelDrawing(): void {
-    setIsDrawing(false);
-    setDraftCoordinates([]);
-    setIsShapeClosed(false);
+  function handleLocate(result: {
+    latitude: number;
+    longitude: number;
+    displayName: string;
+  }): void {
+    setPendingLocation(result);
+    syncLatLngInputs(result.latitude, result.longitude);
+    setFlyToCenter([result.latitude, result.longitude]);
+    setBasemap("satellite");
+    showSuccessToast(`Centered on ${result.displayName}. Confirm to save location.`);
+  }
+
+  function beginDrawMode(options?: { fresh?: boolean }): void {
+    setInputMode("draw");
+    setIsEditing(true);
+    setIsFullscreen(true);
+    setBasemap("satellite");
+    setPickOnMapActive(false);
+
+    if (options?.fresh) {
+      setDraftCoordinates([]);
+      setDraftPlots([]);
+      setIsShapeClosed(false);
+      return;
+    }
+
+    setFlyToCenter(null);
+    setDraftCoordinates(savedPlots[0] ?? []);
+    setDraftPlots(savedPlots.length > 0 ? savedPlots : []);
+    setIsShapeClosed(savedPlots.length > 0);
+  }
+
+  async function handleConfirmLocation(): Promise<void> {
+    if (!pendingLocation) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const confirmed = {
+        latitude: pendingLocation.latitude,
+        longitude: pendingLocation.longitude,
+      };
+      await updateFarm(farm.id, {
+        location: {
+          country: farm.location.country || "Nigeria",
+          region: farm.location.region,
+          city: farm.location.city,
+          ...confirmed,
+        },
+      });
+      setSessionGps(confirmed);
+      setFlyToCenter([confirmed.latitude, confirmed.longitude]);
+      setPendingLocation(null);
+      beginDrawMode({ fresh: true });
+      showSuccessToast("Location saved — draw the farm boundary on the map.");
+      router.refresh();
+    } catch (error) {
+      showErrorToast(
+        isAppError(error) ? error.message : "Failed to save farm location.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleMapClick(coordinate: GeoCoordinateInterface): void {
-    if (inputMode !== "draw") {
+    if (pickOnMapActive && !isEditing) {
+      handleLocate({
+        ...coordinate,
+        displayName: `${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}`,
+      });
+      setPickOnMapActive(false);
       return;
     }
-    setDraftCoordinates((current) => [...current, coordinate]);
   }
 
-  function handleUndo(): void {
-    setDraftCoordinates((current) => current.slice(0, -1));
+  function handleStartEditing(mode: BoundaryInputMode): void {
+    if (mode === "draw") {
+      beginDrawMode();
+      return;
+    }
+    setInputMode(mode);
+    setIsEditing(true);
+    setIsFullscreen(true);
+    setBasemap("satellite");
+    setDraftCoordinates(savedPlots[0] ?? []);
+    setDraftPlots(savedPlots.length > 0 ? savedPlots : []);
+    setIsShapeClosed(savedPlots.length > 0);
+    setPickOnMapActive(false);
+  }
+
+  function handleFocusOnFarm(): void {
+    setFlyToCenter(null);
+    if (savedPlots.length > 0) {
+      const flat = savedPlots.flat();
+      const lat =
+        flat.reduce((sum, c) => sum + c.latitude, 0) / Math.max(flat.length, 1);
+      const lng =
+        flat.reduce((sum, c) => sum + c.longitude, 0) / Math.max(flat.length, 1);
+      setFlyToCenter([lat, lng]);
+    } else if (farmGps) {
+      setFlyToCenter([farmGps.latitude, farmGps.longitude]);
+    } else {
+      showErrorToast("Set a farm location or save a boundary first.");
+      return;
+    }
+    setFocusNonce((current) => current + 1);
+  }
+
+  function handleCancelEditing(): void {
+    setIsEditing(false);
+    setDraftCoordinates([]);
+    setDraftPlots([]);
     setIsShapeClosed(false);
+    setBasemap("street");
   }
 
-  function handleClearAll(): void {
+  function handleCloseCurrentPlot(): void {
+    if (draftCoordinates.length < 3) {
+      showErrorToast("Add at least 3 points before closing the plot.");
+      return;
+    }
+    setIsShapeClosed(true);
+    setDraftPlots((current) =>
+      current.length === 0
+        ? [draftCoordinates]
+        : [...current.slice(0, -1), draftCoordinates],
+    );
+  }
+
+  function handleAddAnotherPlot(): void {
+    if (!isShapeClosed || draftCoordinates.length < 3) {
+      showErrorToast("Close the current plot before adding another.");
+      return;
+    }
+    if (draftPlots.length >= 20) {
+      showErrorToast("At most 20 plots are allowed.");
+      return;
+    }
+    setDraftPlots((current) => {
+      const withCurrent =
+        current.length === 0
+          ? [draftCoordinates]
+          : [...current.slice(0, -1), draftCoordinates];
+      return withCurrent;
+    });
     setDraftCoordinates([]);
     setIsShapeClosed(false);
   }
 
-  function handleCloseShape(): void {
-    if (draftCoordinates.length < 3) {
-      showErrorToast("Add at least 3 points before closing the shape.");
+  async function handleSaveBoundary(): Promise<void> {
+    let plots: GeoCoordinateInterface[][] | null = null;
+
+    if (inputMode === "draw") {
+      if (!isShapeClosed || draftCoordinates.length < 3) {
+        showErrorToast("Close the current plot before saving.");
+        return;
+      }
+      plots =
+        draftPlots.length === 0
+          ? [draftCoordinates]
+          : [...draftPlots.slice(0, -1), draftCoordinates];
+    } else {
+      const single = resolveBoundaryCoordinates({
+        inputMode,
+        coordinates: draftCoordinates,
+        isShapeClosed,
+      });
+      plots = single ? [single] : null;
+    }
+
+    if (!plots || plots.length === 0) {
       return;
     }
-    setIsShapeClosed(true);
-  }
 
-  function resolveSaveCoordinates(): GeoCoordinateInterface[] | null {
-    if (inputMode === "draw") {
-      if (draftCoordinates.length < 3) {
-        showErrorToast("Draw at least 3 points to save a boundary.");
-        return null;
+    for (const plot of plots) {
+      if (plot.length < 3 || plot.length > 500) {
+        showErrorToast("Each plot needs between 3 and 500 vertices.");
+        return;
       }
-      if (!isShapeClosed) {
-        showErrorToast("Close the shape before saving.");
-        return null;
-      }
-      return draftCoordinates;
     }
 
-    const coords = coordinateRows
-      .map(({ latitude, longitude }) => ({ latitude, longitude }))
-      .filter(
-        (coordinate) =>
-          Number.isFinite(coordinate.latitude) &&
-          Number.isFinite(coordinate.longitude) &&
-          coordinate.latitude >= -90 &&
-          coordinate.latitude <= 90 &&
-          coordinate.longitude >= -180 &&
-          coordinate.longitude <= 180,
-      );
-
-    if (coords.length < 3) {
-      showErrorToast("Enter at least 3 valid coordinate pairs.");
-      return null;
-    }
-
-    return coords;
-  }
-
-  async function handleSave(): Promise<void> {
-    const coordinates = resolveSaveCoordinates();
-    if (!coordinates) {
+    if (plots.length > 20) {
+      showErrorToast("At most 20 plots are allowed.");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      await upsertFarmBoundary(farm.id, { coordinates });
-      showSuccessToast("Farm boundary saved successfully.");
-      cancelDrawing();
+      // Send coordinates (primary ring) for backends that require it, plus plots for multi-plot.
+      await upsertFarmBoundary(farm.id, {
+        plots,
+        coordinates: plots[0] ?? [],
+      });
+      showSuccessToast("Farm boundary saved.");
+      setIsEditing(false);
+      setBasemap("street");
+      setIsFullscreen(false);
+      setDraftCoordinates([]);
+      setDraftPlots([]);
       router.refresh();
-    } catch (err) {
-      if (isAppError(err)) {
-        showErrorToast(err.message);
-      } else {
-        showErrorToast("Failed to save boundary. Please try again.");
-      }
+    } catch (error) {
+      showErrorToast(
+        isAppError(error) ? error.message : "Failed to save farm boundary.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleGeoJsonUpload(file: File): Promise<void> {
-    try {
-      const text = await file.text();
-      const parsed = parseGeoJsonBoundary(JSON.parse(text));
-      setInputMode("geojson");
-      setIsDrawing(true);
-      setDraftCoordinates(parsed.coordinates);
-      setCoordinateRows(parsed.coordinates.map((coordinate) => createRow(coordinate)));
-      setIsShapeClosed(true);
-      showSuccessToast("GeoJSON loaded — review the preview and save.");
-    } catch (error) {
-      showErrorToast(
-        error instanceof Error ? error.message : "Could not parse GeoJSON file.",
-      );
-    }
-  }
-
-  async function handleCenterOnAddress(): Promise<void> {
-    setIsGeocoding(true);
-
-    try {
-      const result = await geocodeFarm(farm.id);
-      setFlyToCenter([result.latitude, result.longitude]);
-      showSuccessToast(`Centered on ${result.displayName}`);
-    } catch (err) {
-      if (isAppError(err)) {
-        showErrorToast(err.message);
-      } else {
-        showErrorToast("Could not locate farm address on the map.");
-      }
-    } finally {
-      setIsGeocoding(false);
-    }
-  }
-
-  async function handleDelete(): Promise<void> {
+  async function handleRemoveBoundary(): Promise<void> {
     setIsSubmitting(true);
-
     try {
       await deleteFarmBoundary(farm.id);
       showSuccessToast("Farm boundary removed.");
-      cancelDrawing();
       router.refresh();
-    } catch (err) {
-      if (isAppError(err)) {
-        showErrorToast(err.message);
-      } else {
-        showErrorToast("Failed to remove boundary. Please try again.");
-      }
+    } catch (error) {
+      showErrorToast(
+        isAppError(error) ? error.message : "Failed to remove farm boundary.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function handleToggleLayer(layerId: string, visible: boolean): void {
-    setVisibleLayerIds((current) => {
-      const next = new Set(current);
-      if (visible) {
-        next.add(layerId);
-      } else {
-        next.delete(layerId);
+  const mapShell = (
+    <div
+      className={
+        isFullscreen
+          ? "bg-background fixed inset-0 z-50 flex flex-col"
+          : "flex flex-col gap-3"
       }
-      return next;
-    });
-  }
+    >
+      {isFullscreen ? (
+        <div className="border-border flex items-center justify-between gap-3 border-b px-4 py-3">
+          <div>
+            <p className="text-foreground text-sm font-semibold">
+              Map farm boundary — {farm.name}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Locate the plot, draw on satellite imagery, then save. Desktop only.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={(): void => {
+              if (isEditing) {
+                handleCancelEditing();
+              }
+              setIsFullscreen(false);
+              setBasemap("street");
+            }}
+          >
+            Close
+          </Button>
+        </div>
+      ) : null}
 
-  const mapPreviewCoordinates = isDrawing
-    ? previewCoordinates
-    : (boundary?.coordinates ?? []);
+      <div
+        className={
+          isFullscreen
+            ? "grid min-h-0 flex-1 gap-3 p-4 lg:grid-cols-[320px_1fr]"
+            : "flex flex-col gap-3"
+        }
+      >
+        <div className="flex flex-col gap-3 overflow-auto">
+          {(isFullscreen || isEditing) && !isEditing && (
+            <FarmLocatePanel
+              disabled={isSubmitting}
+              pickOnMapActive={pickOnMapActive}
+              onPickOnMapChange={setPickOnMapActive}
+              onLocate={handleLocate}
+              latitudeText={latitudeText}
+              longitudeText={longitudeText}
+              onLatitudeTextChange={setLatitudeText}
+              onLongitudeTextChange={setLongitudeText}
+            />
+          )}
 
-  return (
-    <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-foreground text-lg font-semibold tracking-tight">
-          Farm map
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Define the farm boundary, then view GFW deforestation overlays on the same map
-          when an assessment is selected.
-        </p>
-      </div>
-
-      <Card className="border-border/80 bg-surface-secondary/40 overflow-hidden shadow-sm">
-        <CardContent className="gap-card flex flex-col pt-6">
-          {!isDrawing ? (
-            <Tabs
-              value={inputMode}
-              onValueChange={(value): void => setInputMode(value as BoundaryInputMode)}
-              className="w-full"
-            >
-              <TabsList className="bg-background/80 grid w-full max-w-md grid-cols-3">
-                <TabsTrigger value="draw">Draw</TabsTrigger>
-                <TabsTrigger value="coordinates">Coordinates</TabsTrigger>
-                <TabsTrigger value="geojson">GeoJSON</TabsTrigger>
-              </TabsList>
-            </Tabs>
+          {(isFullscreen || isEditing) && isEditing ? (
+            <p className="text-muted-foreground bg-accent/40 rounded-lg px-3 py-2 text-xs">
+              Drawing mode — click the map to add boundary corners, then close and save
+              the plot.
+            </p>
           ) : null}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground text-sm">
-              {displayArea != null && Number.isFinite(displayArea) ? (
-                <>
+          {pendingLocation && !isEditing ? (
+            <div className="bg-accent/40 flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs">
+              <span className="text-foreground">
+                Pending location: {pendingLocation.displayName}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={(): void => void handleConfirmLocation()}
+              >
+                Use this location
+              </Button>
+            </div>
+          ) : null}
+
+          {canShowAssessment ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={assessmentMapMode === "satellite" ? "default" : "outline"}
+                  onClick={(): void => setAssessmentMapMode("satellite")}
+                >
+                  Satellite evidence
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={assessmentMapMode === "risk" ? "default" : "outline"}
+                  onClick={(): void => setAssessmentMapMode("risk")}
+                >
+                  Risk layers
+                </Button>
+              </div>
+              {mapContext?.legend?.length ? (
+                <FarmMapLegend legend={mapContext.legend} />
+              ) : null}
+              {mapContext ? (
+                <FarmMapLayerControls
+                  tileLayers={mapContext.tileLayers}
+                  visibleLayerIds={visibleLayerIds}
+                  whispRiskPcrop={mapContext.whispRiskPcrop}
+                  onToggleLayer={(layerId, visible): void => {
+                    setVisibleLayerIds((current) => {
+                      const next = new Set(current);
+                      if (visible) {
+                        next.add(layerId);
+                      } else {
+                        next.delete(layerId);
+                      }
+                      return next;
+                    });
+                  }}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {mapContextError ? (
+            <p className="text-destructive text-xs">{mapContextError}</p>
+          ) : null}
+          {isMapContextLoading ? (
+            <p className="text-muted-foreground text-xs">Loading map overlays…</p>
+          ) : null}
+        </div>
+
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <FarmBoundaryInputField
+            center={mapCenter}
+            farmGps={farmGps}
+            inputMode={inputMode}
+            onInputModeChange={setInputMode}
+            isEditing={isEditing}
+            coordinates={draftCoordinates}
+            onCoordinatesChange={setDraftCoordinates}
+            isShapeClosed={isShapeClosed}
+            onShapeClosedChange={(closed): void => {
+              setIsShapeClosed(closed);
+              // Keep draftPlots in sync when "Close shape" is used (same as Close plot).
+              if (closed && draftCoordinates.length >= 3) {
+                setDraftPlots((current) =>
+                  current.length === 0
+                    ? [draftCoordinates]
+                    : [...current.slice(0, -1), draftCoordinates],
+                );
+              }
+            }}
+            savedCoordinates={savedPlots[0] ?? []}
+            savedPlots={savedPlots}
+            draftPlots={draftPlots}
+            onStartEditing={handleStartEditing}
+            onCancelEditing={handleCancelEditing}
+            disabled={isSubmitting}
+            mapClassName={isFullscreen ? "h-full min-h-0 flex-1" : "h-[28rem] shrink-0"}
+            showBasemapToggle={!isEditing}
+            basemap={basemap}
+            onBasemapChange={setBasemap}
+            flyToCenter={flyToCenter}
+            preferFarmFocus={!isEditing}
+            focusNonce={focusNonce}
+            pickLocationMode={pickOnMapActive}
+            onPickLocation={pickOnMapActive ? handleMapClick : undefined}
+            onVertexDrag={
+              isEditing && isShapeClosed
+                ? (index, coordinate): void => {
+                    setDraftCoordinates((current) =>
+                      current.map((item, i) => (i === index ? coordinate : item)),
+                    );
+                  }
+                : undefined
+            }
+            assessmentMapMode={assessmentMapMode}
+            areaLabel={
+              displayArea !== null ? (
+                <span>
                   Area:{" "}
                   <span className="text-foreground font-medium tabular-nums">
                     {displayArea.toLocaleString()} ha
                   </span>
-                </>
+                  {draftPlots.length > 1 || savedPlots.length > 1
+                    ? ` · ${Math.max(draftPlots.length, savedPlots.length)} plots`
+                    : null}
+                </span>
               ) : (
-                "No boundary mapped yet"
-              )}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isSubmitting || isGeocoding}
-                onClick={(): void => void handleCenterOnAddress()}
-              >
-                {isGeocoding ? "Locating…" : "Center on address"}
-              </Button>
-              {!isDrawing ? (
-                <>
-                  <Button
-                    type="button"
-                    variant={basemap === "street" ? "default" : "outline"}
-                    size="sm"
-                    onClick={(): void => setBasemap("street")}
-                  >
-                    Street
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={basemap === "satellite" ? "default" : "outline"}
-                    size="sm"
-                    onClick={(): void => setBasemap("satellite")}
-                  >
-                    Satellite
-                  </Button>
-                </>
-              ) : null}
-              {!isDrawing && boundary ? (
-                <>
+                <span>No boundary area yet</span>
+              )
+            }
+            leadingActions={
+              <>
+                {!isFullscreen ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={(): void => startDrawing("draw")}
+                    onClick={(): void => setIsFullscreen(true)}
                   >
-                    Redraw
+                    Open full-screen map
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isSubmitting}
-                    onClick={(): void => void handleDelete()}
-                  >
-                    Remove
-                  </Button>
-                </>
-              ) : null}
-              {!isDrawing && !boundary ? (
-                <>
-                  {inputMode === "draw" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={(): void => startDrawing("draw")}
-                    >
-                      Draw boundary
-                    </Button>
-                  ) : null}
-                  {inputMode === "coordinates" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={(): void => startDrawing("coordinates")}
-                    >
-                      Enter coordinates
-                    </Button>
-                  ) : null}
-                  {inputMode === "geojson" ? (
-                    <>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".geojson,.json,application/geo+json,application/json"
-                        className="hidden"
-                        onChange={(event): void => {
-                          const file = event.target.files?.[0];
-                          if (file) {
-                            void handleGeoJsonUpload(file);
-                          }
-                          event.target.value = "";
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={(): void => fileInputRef.current?.click()}
-                      >
-                        Upload GeoJSON
-                      </Button>
-                    </>
-                  ) : null}
-                </>
-              ) : null}
-              {isDrawing ? (
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    isSubmitting || (savedPlots.length === 0 && farmGps === null)
+                  }
+                  onClick={handleFocusOnFarm}
+                >
+                  Focus on farm
+                </Button>
+              </>
+            }
+            trailingActions={
+              isEditing ? (
                 <>
                   {inputMode === "draw" ? (
                     <>
@@ -503,170 +652,67 @@ export function FarmBoundarySection({
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={!draftCoordinates.length}
-                        onClick={handleUndo}
+                        disabled={isSubmitting || draftCoordinates.length < 3}
+                        onClick={handleCloseCurrentPlot}
                       >
-                        Undo
+                        Close plot
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={!draftCoordinates.length}
-                        onClick={handleClearAll}
+                        disabled={isSubmitting || !isShapeClosed}
+                        onClick={handleAddAnotherPlot}
                       >
-                        Clear
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isShapeClosed || draftCoordinates.length < 3}
-                        onClick={handleCloseShape}
-                      >
-                        Close shape
+                        Add plot
                       </Button>
                     </>
                   ) : null}
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={cancelDrawing}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
                     size="sm"
                     disabled={isSubmitting}
-                    onClick={(): void => void handleSave()}
+                    onClick={(): void => void handleSaveBoundary()}
                   >
                     {isSubmitting ? "Saving…" : "Save boundary"}
                   </Button>
                 </>
-              ) : null}
-            </div>
-          </div>
+              ) : boundary ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSubmitting}
+                  onClick={(): void => void handleRemoveBoundary()}
+                >
+                  Remove boundary
+                </Button>
+              ) : null
+            }
+            idleHint="Open the full-screen map to locate the farm in Nigeria, then draw plot boundaries on satellite imagery."
+            mapContext={mapContext}
+            riskLevel={selectedRiskLevel}
+            visibleLayerIds={visibleLayerIds}
+            showAssessmentLayers={Boolean(canShowAssessment)}
+          />
+        </div>
+      </div>
 
-          {isDrawing && inputMode === "coordinates" ? (
-            <div className="bg-background/70 flex flex-col gap-3 rounded-lg border p-3">
-              {coordinateRows.map((row, index) => (
-                <div key={row.id} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor={`lat-${row.id}`} className="text-xs">
-                      Point {index + 1} latitude
-                    </Label>
-                    <Input
-                      id={`lat-${row.id}`}
-                      type="number"
-                      step="any"
-                      value={row.latitude || ""}
-                      onChange={(event): void => {
-                        const value = Number(event.target.value);
-                        setCoordinateRows((current) =>
-                          current.map((item) =>
-                            item.id === row.id ? { ...item, latitude: value } : item,
-                          ),
-                        );
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor={`lng-${row.id}`} className="text-xs">
-                      Longitude
-                    </Label>
-                    <Input
-                      id={`lng-${row.id}`}
-                      type="number"
-                      step="any"
-                      value={row.longitude || ""}
-                      onChange={(event): void => {
-                        const value = Number(event.target.value);
-                        setCoordinateRows((current) =>
-                          current.map((item) =>
-                            item.id === row.id ? { ...item, longitude: value } : item,
-                          ),
-                        );
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={coordinateRows.length <= 3}
-                      onClick={(): void =>
-                        setCoordinateRows((current) =>
-                          current.filter((item) => item.id !== row.id),
-                        )
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={(): void =>
-                  setCoordinateRows((current) => [...current, createRow()])
-                }
-              >
-                Add point
-              </Button>
-            </div>
-          ) : null}
+      <p className="text-muted-foreground px-4 pb-3 text-[11px] leading-relaxed">
+        Map data © OpenStreetMap. Imagery © Esri. Forest layers © Global Forest Watch
+        (UMD). Analysis via Open Foris WHISP where configured. Supports due diligence —
+        not a legal EUDR certificate.
+      </p>
+    </div>
+  );
 
-          <div className="border-border ring-primary/5 h-[28rem] overflow-hidden rounded-xl border shadow-inner ring-1">
-            <FarmUnifiedMapLoader
-              center={mapCenter}
-              farmGps={farmGps}
-              savedCoordinates={mapPreviewCoordinates}
-              draftCoordinates={
-                inputMode === "draw" && isDrawing ? draftCoordinates : []
-              }
-              isDrawing={isDrawing && inputMode === "draw"}
-              isShapeClosed={isShapeClosed}
-              basemap={basemap}
-              flyToCenter={flyToCenter}
-              onMapClick={
-                isDrawing && inputMode === "draw" ? handleMapClick : undefined
-              }
-              mapContext={displayedMapContext}
-              riskLevel={selectedRiskLevel}
-              visibleLayerIds={visibleLayerIds}
-              showAssessmentLayers={Boolean(displayedMapContext)}
-            />
-          </div>
+  if (isFullscreen) {
+    return mapShell;
+  }
 
-          {canShowAssessment && isMapContextLoading ? (
-            <p className="text-muted-foreground text-xs">Loading assessment layers…</p>
-          ) : null}
-          {canShowAssessment && mapContextError ? (
-            <p className="text-destructive text-xs">{mapContextError}</p>
-          ) : null}
-
-          {displayedMapContext ? (
-            <FarmMapLayerControls
-              tileLayers={displayedMapContext.tileLayers}
-              visibleLayerIds={visibleLayerIds}
-              onToggleLayer={handleToggleLayer}
-              whispRiskPcrop={displayedMapContext.whispRiskPcrop}
-            />
-          ) : null}
-
-          {!isDrawing && boundary && !canShowAssessment ? (
-            <p className="text-muted-foreground bg-accent/40 rounded-lg px-3 py-2 text-xs">
-              Run an assessment below to see GFW deforestation overlays on this map.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-    </section>
+  return (
+    <Card className="border-border/80 bg-surface-secondary/20 shadow-sm">
+      <CardContent className="gap-card flex flex-col pt-6">{mapShell}</CardContent>
+    </Card>
   );
 }

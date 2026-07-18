@@ -90,10 +90,13 @@ function EventNotesForm({
   onCancel,
   onSaved,
 }: EventNotesFormProps): React.JSX.Element {
-  const activeActors = actors.filter((actor) => actor.status === "ACTIVE");
+  const activeActors = actors.filter(
+    (actor) => actor.status === "ACTIVE" || actor.id === event.actorId,
+  );
   const [actorId, setActorId] = useState(event.actorId);
   const [notes, setNotes] = useState(event.notes ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedActor = activeActors.find((actor) => actor.id === actorId);
 
   async function handleSubmit(
     formEvent: React.FormEvent<HTMLFormElement>,
@@ -137,7 +140,7 @@ function EventNotesForm({
           disabled={isSubmitting}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select actor" />
+            <SelectValue placeholder="Select actor">{selectedActor?.name}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {activeActors.map((actor) => (

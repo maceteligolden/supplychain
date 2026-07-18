@@ -34,6 +34,23 @@ function generateId(): string {
   return `supply_chain_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Generates the next PREFIX-YYYY-NNNN supply chain code for the mock store. */
+function nextSupplyChainCode(): string {
+  const year = new Date().getUTCFullYear();
+  const prefix = `SC-${year}-`;
+  let maxSequence = 0;
+  for (const item of supplyChains) {
+    if (!item.code.startsWith(prefix)) {
+      continue;
+    }
+    const sequence = Number(item.code.slice(prefix.length));
+    if (!Number.isNaN(sequence) && sequence > maxSequence) {
+      maxSequence = sequence;
+    }
+  }
+  return `${prefix}${String(maxSequence + 1).padStart(4, "0")}`;
+}
+
 export function getAllSupplyChains(): SupplyChainInterface[] {
   return [...supplyChains];
 }
@@ -50,7 +67,7 @@ export function isSupplyChainCodeTaken(code: string, excludeId?: string): boolea
 
 export function createSupplyChain(input: CreateSupplyChainInput): SupplyChainInterface {
   const now = new Date().toISOString();
-  const code = input.code.toUpperCase();
+  const code = nextSupplyChainCode();
 
   const chain: SupplyChainInterface = {
     id: generateId(),
@@ -84,7 +101,6 @@ export function updateSupplyChain(
   const updated: SupplyChainInterface = {
     ...existing,
     name: input.name?.trim() ?? existing.name,
-    code: input.code ? input.code.toUpperCase() : existing.code,
     description:
       input.description !== undefined
         ? input.description.trim() || undefined

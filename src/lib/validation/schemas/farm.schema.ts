@@ -2,8 +2,6 @@ import Joi from "joi";
 
 import { FARM_STATUSES } from "@/config/farm-status";
 
-const codePattern = /^[A-Z0-9_]+$/;
-
 const ownerSchema = Joi.object({
   firstName: Joi.string().trim().max(100).allow("").default(""),
   lastName: Joi.string().trim().max(100).allow("").default(""),
@@ -25,17 +23,6 @@ const locationSchema = Joi.object({
 
 export const createFarmSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).required(),
-  code: Joi.string()
-    .trim()
-    .uppercase()
-    .pattern(codePattern)
-    .min(2)
-    .max(50)
-    .required()
-    .messages({
-      "string.pattern.base":
-        "Code must contain only uppercase letters, numbers, and underscores",
-    }),
   status: Joi.string()
     .valid(...FARM_STATUSES)
     .optional(),
@@ -58,17 +45,6 @@ export const createFarmSchema = Joi.object({
 
 export const updateFarmSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).optional(),
-  code: Joi.string()
-    .trim()
-    .uppercase()
-    .pattern(codePattern)
-    .min(2)
-    .max(50)
-    .optional()
-    .messages({
-      "string.pattern.base":
-        "Code must contain only uppercase letters, numbers, and underscores",
-    }),
   status: Joi.string()
     .valid(...FARM_STATUSES)
     .optional(),
@@ -82,7 +58,6 @@ export const updateFarmSchema = Joi.object({
 
 export type CreateFarmSchemaInput = {
   name: string;
-  code: string;
   status?: (typeof FARM_STATUSES)[number];
   owner: {
     firstName: string;
@@ -105,7 +80,6 @@ export type CreateFarmSchemaInput = {
 
 export type UpdateFarmSchemaInput = {
   name?: string;
-  code?: string;
   status?: (typeof FARM_STATUSES)[number];
   owner?: {
     firstName?: string;

@@ -8,7 +8,6 @@ import {
   areCommoditiesLinked,
   deleteFarm,
   getFarmById,
-  isFarmCodeTaken,
   updateFarm,
 } from "@/mocks/data/farms";
 import {
@@ -95,15 +94,6 @@ export async function PATCH(
           data: body,
           label: "farm update",
         });
-
-        if (input.code && isFarmCodeTaken(input.code, id)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Farm code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
 
         if (input.commodityIds && !areCommoditiesLinked(input.commodityIds)) {
           throw createAppError({

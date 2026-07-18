@@ -28,23 +28,29 @@ export function closeCoordinateRing(
 }
 
 /**
- * Computes geodesic polygon area in hectares from latitude/longitude vertices.
+ * Computes geodesic polygon area in hectares from one ring or multiple plot rings.
  */
 export function calculatePolygonAreaHectares(
-  coordinates: GeoCoordinateInterface[],
+  coordinatesOrPlots: GeoCoordinateInterface[] | GeoCoordinateInterface[][],
 ): number {
-  const closed = closeCoordinateRing(coordinates);
+  const plots = Array.isArray(coordinatesOrPlots[0])
+    ? (coordinatesOrPlots as GeoCoordinateInterface[][])
+    : [coordinatesOrPlots as GeoCoordinateInterface[]];
 
-  if (closed.length < 4) {
-    return 0;
+  let totalSquareMetres = 0;
+
+  for (const plot of plots) {
+    const closed = closeCoordinateRing(plot);
+
+    if (closed.length < 4) {
+      continue;
+    }
+
+    const ring = closed.map(
+      (coord) => [coord.longitude, coord.latitude] as [number, number],
+    );
+    totalSquareMetres += area(polygon([ring]));
   }
 
-  const ring = closed.map(
-    (coord) => [coord.longitude, coord.latitude] as [number, number],
-  );
-
-  const feature = polygon([ring]);
-  const squareMetres = area(feature);
-
-  return Math.round((squareMetres / SQUARE_METRES_PER_HECTARE) * 100) / 100;
+  return Math.round((totalSquareMetres / SQUARE_METRES_PER_HECTARE) * 100) / 100;
 }

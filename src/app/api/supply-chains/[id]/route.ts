@@ -8,7 +8,6 @@ import { isSupplyChainReferencedByAllocation } from "@/mocks/data/batch-allocati
 import {
   deleteSupplyChain,
   getSupplyChainById,
-  isSupplyChainCodeTaken,
   updateSupplyChain,
 } from "@/mocks/data/supply-chains";
 import {
@@ -99,18 +98,8 @@ export async function PATCH(
           label: "supply chain update",
         });
 
-        if (input.code && isSupplyChainCodeTaken(input.code, id)) {
-          throw createAppError({
-            code: "VALIDATION_ERROR",
-            message: "Supply chain code already exists",
-            statusCode: 400,
-            details: { issues: [{ path: "code", message: "Code must be unique" }] },
-          });
-        }
-
         const updated = updateSupplyChain(id, {
           name: input.name,
-          code: input.code,
           description: input.description,
           status: input.status as GetSupplyChainOutput["status"] | undefined,
           commodityId: input.commodityId,

@@ -2,9 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { LatLngExpression } from "leaflet";
+import { CheckIcon } from "lucide-react";
 
-import { FarmBoundaryDrawField } from "@/components/farms/farm-boundary-draw-field";
+import {
+  FarmBoundaryInputField,
+  resolveBoundaryCoordinates,
+  type BoundaryInputMode,
+} from "@/components/farms/farm-boundary-input-field";
+import { NIGERIA_DEFAULT_CENTER, type FarmMapCenter } from "@/lib/farm/map-types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,11 +35,10 @@ import {
 } from "@/config/farm-status";
 import { createEmptyFarmLocation } from "@/lib/farm/empty-location";
 import { createEmptyFarmOwner } from "@/lib/farm/empty-owner";
-import { generateFarmCodeFromName } from "@/lib/farm/code-generator";
 import { cn } from "@/lib/utils";
 import { isAppError } from "@/lib/errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast/notify";
-import { upsertFarmBoundary } from "@/services/farm-boundaries.service";
+import { geocodeQuery, upsertFarmBoundary } from "@/services/farm-boundaries.service";
 import { createFarm, updateFarm } from "@/services/farms.service";
 import type { CommodityInterface } from "@/types/commodity.interface";
 import type { GeoCoordinateInterface } from "@/types/farm-boundary.interface";
@@ -95,7 +99,6 @@ export function FarmFormDialog({
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState(farm?.name ?? "");
-  const [code, setCode] = useState(farm?.code ?? "");
   const [commodityIds, setCommodityIds] = useState<string[]>(farm?.commodityIds ?? []);
   const [ownerFirstName, setOwnerFirstName] = useState(farm?.owner.firstName ?? "");
   const [ownerLastName, setOwnerLastName] = useState(farm?.owner.lastName ?? "");
@@ -114,6 +117,10 @@ export function FarmFormDialog({
     GeoCoordinateInterface[]
   >([]);
   const [boundaryShapeClosed, setBoundaryShapeClosed] = useState(false);
+  const [boundaryInputMode, setBoundaryInputMode] = useState<BoundaryInputMode>("draw");
+  const [isBoundaryEditing, setIsBoundaryEditing] = useState(false);
+  const [flyToCenter, setFlyToCenter] = useState<FarmMapCenter | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [annualProduction, setAnnualProduction] = useState(
     farm?.annualProductionEstimateKg !== undefined
       ? String(farm.annualProductionEstimateKg)
@@ -123,22 +130,25 @@ export function FarmFormDialog({
     farm?.declarationAccepted ?? false,
   );
   const [status, setStatus] = useState<FarmStatus>(farm?.status ?? "DRAFT");
-  const [codeManuallyEdited, setCodeManuallyEdited] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const boundaryMapCenter = useMemo((): LatLngExpression | undefined => {
+  const boundaryMapCenter = useMemo((): FarmMapCenter => {
     const parsedLatitude = latitude.trim() ? Number(latitude) : undefined;
     const parsedLongitude = longitude.trim() ? Number(longitude) : undefined;
-    if (parsedLatitude !== undefined && parsedLongitude !== undefined) {
+    if (
+      parsedLatitude !== undefined &&
+      parsedLongitude !== undefined &&
+      Number.isFinite(parsedLatitude) &&
+      Number.isFinite(parsedLongitude)
+    ) {
       return [parsedLatitude, parsedLongitude];
     }
-    return undefined;
+    return NIGERIA_DEFAULT_CENTER;
   }, [latitude, longitude]);
 
   function resetWizardState(): void {
     setStep(0);
     setName(farm?.name ?? "");
-    setCode(farm?.code ?? "");
     setCommodityIds(farm?.commodityIds ?? []);
     setOwnerFirstName(farm?.owner.firstName ?? "");
     setOwnerLastName(farm?.owner.lastName ?? "");
@@ -155,6 +165,9 @@ export function FarmFormDialog({
     );
     setBoundaryCoordinates([]);
     setBoundaryShapeClosed(false);
+    setBoundaryInputMode("draw");
+    setIsBoundaryEditing(false);
+    setFlyToCenter(null);
     setAnnualProduction(
       farm?.annualProductionEstimateKg !== undefined
         ? String(farm.annualProductionEstimateKg)
@@ -162,7 +175,6 @@ export function FarmFormDialog({
     );
     setDeclarationAccepted(farm?.declarationAccepted ?? false);
     setStatus(farm?.status ?? "DRAFT");
-    setCodeManuallyEdited(isEdit);
   }
 
   function handleOpenChange(nextOpen: boolean): void {
@@ -170,13 +182,6 @@ export function FarmFormDialog({
       resetWizardState();
     }
     onOpenChange(nextOpen);
-  }
-
-  function handleNameChange(value: string): void {
-    setName(value);
-    if (!codeManuallyEdited) {
-      setCode(generateFarmCodeFromName(value));
-    }
   }
 
   function toggleCommodity(commodityId: string): void {
@@ -190,9 +195,7 @@ export function FarmFormDialog({
   function canProceedFromStep(currentStep: number): boolean {
     const kind = getStepKind(currentStep, isEdit);
     if (kind === "farm") {
-      return (
-        name.trim().length >= 2 && code.trim().length >= 2 && commodityIds.length > 0
-      );
+      return name.trim().length >= 2 && commodityIds.length > 0;
     }
     if (kind === "location") {
       return (
@@ -230,6 +233,9 @@ export function FarmFormDialog({
     if (kind === "boundary") {
       setBoundaryCoordinates([]);
       setBoundaryShapeClosed(false);
+      setBoundaryInputMode("draw");
+      setIsBoundaryEditing(false);
+      setFlyToCenter(null);
     }
 
     if (kind === "compliance") {
@@ -252,6 +258,11 @@ export function FarmFormDialog({
   }
 
   async function handleSubmit(): Promise<void> {
+    if (!isEdit && !declarationAccepted) {
+      showErrorToast("Accept the compliance declaration before creating the farm.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const parsedLatitude = latitude.trim() ? Number(latitude) : undefined;
@@ -262,7 +273,6 @@ export function FarmFormDialog({
 
     const payload = {
       name,
-      code,
       owner: {
         firstName: ownerFirstName,
         lastName: ownerLastName,
@@ -293,7 +303,14 @@ export function FarmFormDialog({
         });
 
         if (boundaryShapeClosed && boundaryCoordinates.length >= 3) {
-          await upsertFarmBoundary(created.id, { coordinates: boundaryCoordinates });
+          const resolvedBoundary = resolveBoundaryCoordinates({
+            inputMode: boundaryInputMode,
+            coordinates: boundaryCoordinates,
+            isShapeClosed: boundaryShapeClosed,
+          });
+          if (resolvedBoundary) {
+            await upsertFarmBoundary(created.id, { plots: [resolvedBoundary] });
+          }
         }
 
         showSuccessToast(`"${name}" created successfully.`);
@@ -318,6 +335,7 @@ export function FarmFormDialog({
     stepKind === "boundary" ||
     stepKind === "compliance";
   const lastStepIndex = wizardSteps.length - 1;
+  const canSubmit = isEdit || declarationAccepted;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -349,24 +367,17 @@ export function FarmFormDialog({
                 <Input
                   id="farm-name"
                   value={name}
-                  onChange={(event) => handleNameChange(event.target.value)}
+                  onChange={(event) => setName(event.target.value)}
                   required
                   disabled={isSubmitting}
                 />
               </div>
-              <div className="gap-card flex flex-col">
-                <Label htmlFor="farm-code">Code</Label>
-                <Input
-                  id="farm-code"
-                  value={code}
-                  onChange={(event): void => {
-                    setCodeManuallyEdited(true);
-                    setCode(event.target.value.toUpperCase());
-                  }}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+              {isEdit && farm ? (
+                <div className="gap-card flex flex-col">
+                  <Label>Code</Label>
+                  <code className="text-sm">{farm.code}</code>
+                </div>
+              ) : null}
               <div className="gap-card flex flex-col">
                 <Label>Commodities</Label>
                 <p className="text-muted-foreground text-xs">
@@ -508,16 +519,84 @@ export function FarmFormDialog({
           {stepKind === "boundary" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
-                Optional — draw the farm boundary on the map or skip and map it later on
-                the farm detail page.
+                Optional — quick map here, or skip and finish mapping on the farm
+                Deforestation tab (full-screen locate + draw).
               </p>
-              <FarmBoundaryDrawField
+              <FarmBoundaryInputField
                 center={boundaryMapCenter}
+                inputMode={boundaryInputMode}
+                onInputModeChange={setBoundaryInputMode}
+                isEditing={isBoundaryEditing}
                 coordinates={boundaryCoordinates}
                 onCoordinatesChange={setBoundaryCoordinates}
                 isShapeClosed={boundaryShapeClosed}
                 onShapeClosedChange={setBoundaryShapeClosed}
+                onStartEditing={(mode): void => {
+                  setBoundaryInputMode(mode);
+                  setIsBoundaryEditing(true);
+                  if (mode === "draw") {
+                    setBoundaryCoordinates([]);
+                    setBoundaryShapeClosed(false);
+                  }
+                }}
+                onCancelEditing={(): void => {
+                  setIsBoundaryEditing(false);
+                  setBoundaryCoordinates([]);
+                  setBoundaryShapeClosed(false);
+                }}
                 disabled={isSubmitting}
+                mapClassName="h-64"
+                flyToCenter={flyToCenter}
+                leadingActions={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      isSubmitting ||
+                      isGeocoding ||
+                      ![city, region, country].some((part) => part.trim().length > 0)
+                    }
+                    onClick={(): void => {
+                      void (async (): Promise<void> => {
+                        const query = [city, region, country]
+                          .map((part) => part.trim())
+                          .filter(Boolean)
+                          .join(", ");
+                        if (!query) {
+                          showErrorToast("Enter a city, region, or country first.");
+                          return;
+                        }
+                        setIsGeocoding(true);
+                        try {
+                          const result = await geocodeQuery(query);
+                          setFlyToCenter([result.latitude, result.longitude]);
+                          showSuccessToast(`Centered on ${result.displayName}`);
+                        } catch (err) {
+                          if (isAppError(err)) {
+                            showErrorToast(err.message);
+                          } else {
+                            showErrorToast("Could not locate that address on the map.");
+                          }
+                        } finally {
+                          setIsGeocoding(false);
+                        }
+                      })();
+                    }}
+                  >
+                    {isGeocoding ? "Locating…" : "Center on address"}
+                  </Button>
+                }
+                idleHint="Choose how to locate the farm on the map, or skip this step."
+                areaLabel={
+                  boundaryShapeClosed && boundaryCoordinates.length >= 3 ? (
+                    <span className="text-foreground font-medium">
+                      Boundary ready — {boundaryCoordinates.length} points
+                    </span>
+                  ) : (
+                    "No boundary mapped yet"
+                  )
+                }
               />
             </div>
           ) : null}
@@ -525,7 +604,9 @@ export function FarmFormDialog({
           {stepKind === "compliance" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
-                Optional compliance details — skip if not ready yet.
+                {isEdit
+                  ? "Update compliance details. The declaration remains editable and is not changed unless you update it here."
+                  : "Confirm the due-diligence declaration to create this farm. Production estimate is optional."}
               </p>
               {isEdit ? (
                 <div className="gap-card flex flex-col">
@@ -566,15 +647,75 @@ export function FarmFormDialog({
                   disabled={isSubmitting}
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={declarationAccepted}
-                  onChange={(event) => setDeclarationAccepted(event.target.checked)}
+              <div className="gap-card flex flex-col">
+                <Label id="farm-declaration-label" htmlFor="farm-declaration">
+                  Compliance declaration
+                  {!isEdit ? (
+                    <span className="text-destructive ml-1" aria-hidden="true">
+                      *
+                    </span>
+                  ) : null}
+                </Label>
+                <button
+                  id="farm-declaration"
+                  type="button"
+                  role="checkbox"
+                  aria-checked={declarationAccepted}
+                  aria-labelledby="farm-declaration-label"
+                  aria-describedby="farm-declaration-description"
                   disabled={isSubmitting}
-                />
-                Declaration accepted
-              </label>
+                  onClick={(): void => setDeclarationAccepted((current) => !current)}
+                  className={cn(
+                    "rounded-lg border px-3 py-3 text-left transition-colors",
+                    declarationAccepted
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50",
+                    isSubmitting && "pointer-events-none opacity-50",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={cn(
+                        "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border",
+                        declarationAccepted
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/40 bg-background",
+                      )}
+                      aria-hidden="true"
+                    >
+                      {declarationAccepted ? <CheckIcon className="size-3.5" /> : null}
+                    </span>
+                    <span className="flex min-w-0 flex-col gap-1.5">
+                      <span className="text-sm font-medium">
+                        I confirm this farm&apos;s due-diligence declaration
+                      </span>
+                      <span
+                        id="farm-declaration-description"
+                        className="text-muted-foreground text-xs leading-relaxed"
+                      >
+                        By accepting, you declare that plot geolocation and production
+                        information for this farm will be maintained in good faith for
+                        EUDR and related compliance due diligence, and that you are
+                        authorised to submit this information on behalf of the producer.
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          declarationAccepted
+                            ? "text-primary"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {declarationAccepted
+                          ? "Declaration accepted"
+                          : isEdit
+                            ? "Declaration not accepted"
+                            : "Acceptance required to create farm"}
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -614,7 +755,7 @@ export function FarmFormDialog({
             ) : (
               <Button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canSubmit}
                 onClick={(): void => void handleSubmit()}
               >
                 {isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create farm"}

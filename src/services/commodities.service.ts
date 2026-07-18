@@ -47,7 +47,6 @@ export async function createCommodity(
   if (input.imageFile && !env.useMockApi) {
     const formData = new FormData();
     formData.append("name", input.name);
-    formData.append("code", input.code);
     formData.append("unit", input.unit);
     formData.append("image", input.imageFile);
 
@@ -67,7 +66,6 @@ export async function createCommodity(
       method: "POST",
       body: JSON.stringify({
         name: input.name,
-        code: input.code,
         unit: input.unit,
         imageFileName: input.imageFile?.name ?? input.imageFileName,
       }),
@@ -87,9 +85,6 @@ export async function updateCommodity(
     const formData = new FormData();
     if (input.name) {
       formData.append("name", input.name);
-    }
-    if (input.code) {
-      formData.append("code", input.code);
     }
     if (input.unit) {
       formData.append("unit", input.unit);
@@ -112,7 +107,6 @@ export async function updateCommodity(
       method: "PATCH",
       body: JSON.stringify({
         name: input.name,
-        code: input.code,
         unit: input.unit,
         imageFileName: input.imageFile?.name ?? input.imageFileName,
       }),

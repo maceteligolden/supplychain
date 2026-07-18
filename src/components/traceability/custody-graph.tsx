@@ -1,7 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
-import { Background, Controls, ReactFlow, type Edge, type Node } from "@xyflow/react";
+import { useEffect, useMemo } from "react";
+import {
+  Background,
+  Controls,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  type Edge,
+  type Node,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import {
@@ -15,10 +23,37 @@ export interface CustodyGraphProps {
   graph: TraceabilityGraphInterface;
 }
 
+const FIRST_CARD_TYPES = new Set(["farm", "batch", "chain"]);
+
+function FitFirstCards({ focusNodeIds }: { focusNodeIds: string[] }): null {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (focusNodeIds.length === 0) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      void fitView({
+        nodes: focusNodeIds.map((id) => ({ id })),
+        padding: 0.2,
+        duration: 200,
+      });
+    });
+
+    return (): void => {
+      cancelAnimationFrame(frame);
+    };
+  }, [fitView, focusNodeIds]);
+
+  return null;
+}
+
 /**
  * CustodyGraph
  *
  * Interactive left-to-right chain-of-custody visualization using React Flow.
+ * Initial viewport focuses on farm → batch → chain cards.
  */
 export function CustodyGraph({ graph }: CustodyGraphProps): React.JSX.Element {
   const nodes = useMemo(
@@ -50,6 +85,13 @@ export function CustodyGraph({ graph }: CustodyGraphProps): React.JSX.Element {
     [graph.edges],
   );
 
+  const focusNodeIds = useMemo(() => {
+    const firstCards = graph.nodes
+      .filter((node) => FIRST_CARD_TYPES.has(node.type))
+      .map((node) => node.id);
+    return firstCards.length > 0 ? firstCards : graph.nodes.map((node) => node.id);
+  }, [graph.nodes]);
+
   return (
     <div className="flex flex-col gap-3">
       {!graph.hasAllocations ? (
@@ -58,23 +100,26 @@ export function CustodyGraph({ graph }: CustodyGraphProps): React.JSX.Element {
           steps. Edit this chain to assign produce from farms.
         </p>
       ) : null}
-      <div className="border-border bg-muted/20 h-96 min-h-96 w-full overflow-hidden rounded-lg border">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={custodyGraphNodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          nodesConnectable={false}
-          nodesDraggable={false}
-          elementsSelectable={false}
-          panOnScroll
-          zoomOnScroll={false}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background gap={16} size={1} />
-          <Controls showInteractive={false} />
-        </ReactFlow>
+      <div className="border-border bg-muted/20 h-[28rem] min-h-96 w-full overflow-hidden rounded-lg border">
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={custodyGraphNodeTypes}
+            minZoom={0.5}
+            maxZoom={1.5}
+            nodesConnectable={false}
+            nodesDraggable={false}
+            elementsSelectable={false}
+            panOnScroll
+            zoomOnScroll={false}
+            proOptions={{ hideAttribution: true }}
+          >
+            <FitFirstCards focusNodeIds={focusNodeIds} />
+            <Background gap={16} size={1} />
+            <Controls showInteractive={false} />
+          </ReactFlow>
+        </ReactFlowProvider>
       </div>
       <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1.5">

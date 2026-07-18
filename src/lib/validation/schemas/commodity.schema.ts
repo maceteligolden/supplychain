@@ -2,21 +2,8 @@ import Joi from "joi";
 
 import { COMMODITY_UNITS } from "@/config/commodity-units";
 
-const codePattern = /^[A-Z0-9_]+$/;
-
 export const createCommoditySchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).required(),
-  code: Joi.string()
-    .trim()
-    .uppercase()
-    .pattern(codePattern)
-    .min(2)
-    .max(50)
-    .required()
-    .messages({
-      "string.pattern.base":
-        "Code must contain only uppercase letters, numbers, and underscores",
-    }),
   unit: Joi.string()
     .valid(...COMMODITY_UNITS)
     .required(),
@@ -25,17 +12,6 @@ export const createCommoditySchema = Joi.object({
 
 export const updateCommoditySchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).optional(),
-  code: Joi.string()
-    .trim()
-    .uppercase()
-    .pattern(codePattern)
-    .min(2)
-    .max(50)
-    .optional()
-    .messages({
-      "string.pattern.base":
-        "Code must contain only uppercase letters, numbers, and underscores",
-    }),
   unit: Joi.string()
     .valid(...COMMODITY_UNITS)
     .optional(),
@@ -44,14 +20,12 @@ export const updateCommoditySchema = Joi.object({
 
 export type CreateCommoditySchemaInput = {
   name: string;
-  code: string;
   unit: string;
   imageFileName?: string;
 };
 
 export type UpdateCommoditySchemaInput = {
   name?: string;
-  code?: string;
   unit?: string;
   imageFileName?: string;
 };

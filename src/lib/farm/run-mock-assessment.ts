@@ -100,6 +100,8 @@ export function runMockFarmAssessment(input: {
     analysis,
     assessedAt: input.assessedAt,
     boundaryAreaHectares: input.boundary.areaHectares,
+    status: "COMPLETE",
+    source: "FALLBACK",
     createdAt: input.assessedAt,
   };
 }

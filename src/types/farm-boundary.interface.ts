@@ -8,8 +8,10 @@ export interface GeoCoordinateInterface {
 export interface FarmBoundaryInterface {
   /** Farm this boundary belongs to. */
   farmId: string;
-  /** Polygon vertices (open ring — auto-closed on save). */
+  /** Primary / first plot ring (compat). */
   coordinates: GeoCoordinateInterface[];
+  /** All plot rings for multi-plot farms. */
+  plots?: GeoCoordinateInterface[][];
   /** Computed geodesic area in hectares. */
   areaHectares: number;
   /** ISO timestamp when the boundary was created. */
@@ -19,7 +21,8 @@ export interface FarmBoundaryInterface {
 }
 
 export type UpsertFarmBoundaryInput = {
-  coordinates: GeoCoordinateInterface[];
+  coordinates?: GeoCoordinateInterface[];
+  plots?: GeoCoordinateInterface[][];
 };
 
 export type GetFarmBoundaryOutput = {
@@ -37,4 +40,5 @@ export type GetFarmGeocodeOutput = {
   latitude: number;
   longitude: number;
   displayName: string;
+  results?: GetFarmGeocodeOutput[];
 };

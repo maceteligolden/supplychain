@@ -29,7 +29,6 @@ export type SupplyChainAllocationInput = {
 
 export type CreateSupplyChainInput = {
   name: string;
-  code: string;
   description?: string;
   status: SupplyChainStatus;
   commodityId?: string;
@@ -38,7 +37,6 @@ export type CreateSupplyChainInput = {
 
 export type UpdateSupplyChainInput = {
   name?: string;
-  code?: string;
   description?: string;
   status?: SupplyChainStatus;
   commodityId?: string;

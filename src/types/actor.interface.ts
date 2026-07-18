@@ -34,7 +34,6 @@ export interface ActorInterface {
 
 export type CreateActorInput = {
   name: string;
-  code: string;
   type: ActorType;
   address: ActorAddressInterface;
   status: ActorStatus;
@@ -42,7 +41,6 @@ export type CreateActorInput = {
 
 export type UpdateActorInput = {
   name?: string;
-  code?: string;
   type?: ActorType;
   address?: Partial<ActorAddressInterface>;
   status?: ActorStatus;

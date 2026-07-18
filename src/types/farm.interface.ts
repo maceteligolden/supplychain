@@ -55,7 +55,6 @@ export interface FarmInterface {
 
 export type CreateFarmInput = {
   name: string;
-  code: string;
   status?: FarmStatus;
   owner: FarmOwnerInterface;
   commodityIds: string[];
@@ -67,7 +66,6 @@ export type CreateFarmInput = {
 
 export type UpdateFarmInput = {
   name?: string;
-  code?: string;
   status?: FarmStatus;
   owner?: Partial<FarmOwnerInterface>;
   commodityIds?: string[];

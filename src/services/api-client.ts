@@ -127,11 +127,17 @@ export async function fetchJson<T>(input: FetchJsonInput): Promise<T> {
       input.url !== API_ROUTES.auth.refresh &&
       input.url !== API_ROUTES.auth.login
     ) {
-      try {
-        await attemptTokenRefresh(cookieHeader);
-        return executeFetch();
-      } catch {
-        throw error;
+      // Server-side (RSC) renders cannot persist rotated cookies to the browser,
+      // so refreshing here rotates the refresh token, orphans the browser's copy,
+      // and bricks the session. Middleware owns server-side refresh; only the
+      // browser (which applies Set-Cookie) may refresh from this client.
+      if (typeof window !== "undefined") {
+        try {
+          await attemptTokenRefresh(cookieHeader);
+          return executeFetch();
+        } catch {
+          throw error;
+        }
       }
     }
 
