@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LatLngExpression } from "leaflet";
+import { CheckIcon } from "lucide-react";
 
 import { FarmBoundaryDrawField } from "@/components/farms/farm-boundary-draw-field";
 import { Button } from "@/components/ui/button";
@@ -238,6 +239,11 @@ export function FarmFormDialog({
   }
 
   async function handleSubmit(): Promise<void> {
+    if (!isEdit && !declarationAccepted) {
+      showErrorToast("Accept the compliance declaration before creating the farm.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const parsedLatitude = latitude.trim() ? Number(latitude) : undefined;
@@ -303,6 +309,7 @@ export function FarmFormDialog({
     stepKind === "boundary" ||
     stepKind === "compliance";
   const lastStepIndex = wizardSteps.length - 1;
+  const canSubmit = isEdit || declarationAccepted;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -503,7 +510,9 @@ export function FarmFormDialog({
           {stepKind === "compliance" ? (
             <div className="gap-section flex flex-col">
               <p className="text-muted-foreground text-sm">
-                Optional compliance details — skip if not ready yet.
+                {isEdit
+                  ? "Update compliance details. The declaration remains editable and is not changed unless you update it here."
+                  : "Confirm the due-diligence declaration to create this farm. Production estimate is optional."}
               </p>
               {isEdit ? (
                 <div className="gap-card flex flex-col">
@@ -544,15 +553,75 @@ export function FarmFormDialog({
                   disabled={isSubmitting}
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={declarationAccepted}
-                  onChange={(event) => setDeclarationAccepted(event.target.checked)}
+              <div className="gap-card flex flex-col">
+                <Label id="farm-declaration-label" htmlFor="farm-declaration">
+                  Compliance declaration
+                  {!isEdit ? (
+                    <span className="text-destructive ml-1" aria-hidden="true">
+                      *
+                    </span>
+                  ) : null}
+                </Label>
+                <button
+                  id="farm-declaration"
+                  type="button"
+                  role="checkbox"
+                  aria-checked={declarationAccepted}
+                  aria-labelledby="farm-declaration-label"
+                  aria-describedby="farm-declaration-description"
                   disabled={isSubmitting}
-                />
-                Declaration accepted
-              </label>
+                  onClick={(): void => setDeclarationAccepted((current) => !current)}
+                  className={cn(
+                    "rounded-lg border px-3 py-3 text-left transition-colors",
+                    declarationAccepted
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50",
+                    isSubmitting && "pointer-events-none opacity-50",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={cn(
+                        "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border",
+                        declarationAccepted
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/40 bg-background",
+                      )}
+                      aria-hidden="true"
+                    >
+                      {declarationAccepted ? <CheckIcon className="size-3.5" /> : null}
+                    </span>
+                    <span className="flex min-w-0 flex-col gap-1.5">
+                      <span className="text-sm font-medium">
+                        I confirm this farm&apos;s due-diligence declaration
+                      </span>
+                      <span
+                        id="farm-declaration-description"
+                        className="text-muted-foreground text-xs leading-relaxed"
+                      >
+                        By accepting, you declare that plot geolocation and production
+                        information for this farm will be maintained in good faith for
+                        EUDR and related compliance due diligence, and that you are
+                        authorised to submit this information on behalf of the producer.
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          declarationAccepted
+                            ? "text-primary"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {declarationAccepted
+                          ? "Declaration accepted"
+                          : isEdit
+                            ? "Declaration not accepted"
+                            : "Acceptance required to create farm"}
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -592,7 +661,7 @@ export function FarmFormDialog({
             ) : (
               <Button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canSubmit}
                 onClick={(): void => void handleSubmit()}
               >
                 {isSubmitting ? "Saving…" : isEdit ? "Save changes" : "Create farm"}
